@@ -78,7 +78,9 @@ jobs:
           - platform: windows-latest
             args: --bundles nsis -- --locked
           - platform: macos-latest
-            args: --bundles dmg --target universal-apple-darwin -- --locked
+            # ! The updater on macOS installs the signed `.app.tar.gz` that only the
+            # ! `app` bundle produces; the DMG is for the first install.
+            args: --bundles app,dmg --target universal-apple-darwin -- --locked
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
