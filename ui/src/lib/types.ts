@@ -12,6 +12,7 @@ export type SettingsType = {
   resolved_language: ResolvedLanguageType;
   close_to_tray: boolean;
   show_account_names: boolean;
+  show_steam_ids: boolean;
   blur_codes: boolean;
   update_interval: UpdateInterval;
   search_scope: SearchScope;
@@ -130,6 +131,7 @@ export type SnapshotType = {
   settings: SettingsType;
   folders: FolderType[];
   masked: boolean;
+  steam_ids_visible: boolean;
 };
 
 export type UpdateInfoType = {

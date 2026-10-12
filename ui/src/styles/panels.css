@@ -1,3 +1,9 @@
+.account-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
 .fact {
   padding: 8px 10px;
   background: var(--base);
@@ -24,6 +30,108 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+
+.account-identifiers {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--base);
+}
+
+.account-identifiers summary {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 54px;
+  padding: 9px 10px;
+  color: var(--muted);
+  cursor: pointer;
+  list-style: none;
+}
+
+.account-identifiers summary::-webkit-details-marker {
+  display: none;
+}
+
+.account-identifiers summary > svg:last-child {
+  margin-left: auto;
+}
+
+.account-identifiers[open] summary > svg:last-child {
+  transform: rotate(180deg);
+}
+
+.account-identifiers summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.identifiers-popover {
+  position: fixed;
+  z-index: 5;
+  width: min(580px, 82vw);
+  max-height: min(370px, 55vh);
+  overflow: auto;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--base);
+  box-shadow: 0 8px 24px var(--popover-shadow);
+}
+
+.identifiers-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.identifiers-list {
+  margin: 0;
+}
+
+.identifiers-list > div {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid var(--border);
+  padding: 6px 10px;
+}
+
+.identifiers-list dt {
+  color: var(--muted);
+}
+
+.identifiers-list dd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  min-width: 0;
+}
+
+.identifiers-list dd > span {
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.identifiers-list .copy-button {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+@media (max-width: 540px) {
+  .account-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .identifiers-list > div {
+    grid-template-columns: 100px minmax(0, 1fr);
+  }
 }
 
 .block-title {

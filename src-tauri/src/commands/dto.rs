@@ -6,6 +6,7 @@ pub struct SettingsDto {
     pub resolved_language: String,
     pub close_to_tray: bool,
     pub show_account_names: bool,
+    pub show_steam_ids: bool,
     pub blur_codes: bool,
     pub update_interval: crate::settings::UpdateInterval,
     pub search_scope: crate::settings::SearchScope,
@@ -57,6 +58,7 @@ pub struct SnapshotDto {
     pub settings: SettingsDto,
     pub folders: Vec<FolderDto>,
     pub masked: bool,
+    pub steam_ids_visible: bool,
 }
 
 #[derive(Serialize)]

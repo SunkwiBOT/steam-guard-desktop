@@ -52,6 +52,8 @@ pub struct Settings {
     #[serde(default)]
     pub show_account_names: bool,
     #[serde(default)]
+    pub show_steam_ids: bool,
+    #[serde(default)]
     pub blur_codes: bool,
     #[serde(default)]
     pub update_interval: UpdateInterval,
@@ -75,6 +77,7 @@ impl Default for Settings {
             language: Language::Auto,
             close_to_tray: true,
             show_account_names: false,
+            show_steam_ids: false,
             blur_codes: false,
             update_interval: UpdateInterval::SixHours,
             search_scope: SearchScope::Both,

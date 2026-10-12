@@ -44,11 +44,17 @@ profile and are cached locally.
 
 ![Account details](screenshots/account.png)
 
-The details show the code with its countdown, the pending trade and market
-confirmations to accept or refuse, and the security actions: reveal or copy the
-revocation code, export this authenticator, remove it from the account (which
-revokes it on Steam), or forget it locally. When Steam's session tokens have
-expired, the card offers to sign in again.
+The details show the sign-in name with reveal and copy, the code with its
+countdown, the pending trade and market confirmations to accept or refuse, and
+the security actions: reveal or copy the revocation code, export this
+authenticator, remove it from the account (which revokes it on Steam), or forget
+it locally. When Steam's session tokens have expired, the card offers to sign in
+again.
+
+**Steam IDs** opens the full identifier list — SteamID 64, account ID, Steam2 and
+Steam3, the profile and invite links, and the FiveM/HEX form.
+
+![Steam IDs](screenshots/account-ids.png)
 
 ### Adding an account
 
@@ -107,9 +113,10 @@ Steam trade and market holds, from 2 to 15 days depending on Steam's rules.
 
 ![Preferences](screenshots/settings-preferences.png)
 
-- **Preferences**: language (system, English or French), start with the system,
-  close to the notification area or quit, update check interval, show the
-  sign-in names on the cards.
+- **Preferences**: language (system or one of the 29 Steam languages), start
+  with the system, close to the notification area or quit, update check
+  interval, privacy (show the sign-in names, hide the Steam IDs, blur the codes
+  on the cards).
 - **Vault**: password, automatic lock delay, backups.
 - **Folders**: create, rename, recolour and delete folders.
 - **Logs**: the local log keeps categories and durations only, never arguments,

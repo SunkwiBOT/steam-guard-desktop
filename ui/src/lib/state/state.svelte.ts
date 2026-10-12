@@ -31,6 +31,7 @@ export const EMPTY_SETTINGS: SettingsType = {
   resolved_language: Language.EN,
   close_to_tray: true,
   show_account_names: true,
+  show_steam_ids: false,
   blur_codes: false,
   update_interval: UpdateInterval.SIX_HOURS,
   search_scope: SearchScope.BOTH,

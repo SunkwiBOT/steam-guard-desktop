@@ -169,6 +169,7 @@ pub(crate) fn build_snapshot(state: &AppState) -> SnapshotDto {
             resolved_language: settings.language.resolved().to_string(),
             close_to_tray: settings.close_to_tray,
             show_account_names: settings.show_account_names,
+            show_steam_ids: settings.show_steam_ids,
             blur_codes: settings.blur_codes,
             update_interval: settings.update_interval,
             search_scope: settings.search_scope,
@@ -177,6 +178,7 @@ pub(crate) fn build_snapshot(state: &AppState) -> SnapshotDto {
         },
         folders,
         masked,
+        steam_ids_visible: settings.show_steam_ids,
     }
 }
 

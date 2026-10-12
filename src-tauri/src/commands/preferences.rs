@@ -67,6 +67,17 @@ pub fn set_show_account_names(
 }
 
 #[tauri::command(async)]
+pub fn set_steam_ids_visible(
+    state: State<'_, AppState>,
+    visible: bool,
+) -> Result<SnapshotDto, String> {
+    crate::logging::run("set_steam_ids_visible", || {
+        state.update_settings(|settings| settings.show_steam_ids = visible)?;
+        Ok(build_snapshot(&state))
+    })
+}
+
+#[tauri::command(async)]
 pub fn set_blur_codes(state: State<'_, AppState>, enabled: bool) -> Result<SnapshotDto, String> {
     crate::logging::run("set_blur_codes", || {
         state.update_settings(|settings| settings.blur_codes = enabled)?;

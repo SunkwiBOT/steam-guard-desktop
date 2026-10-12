@@ -37,6 +37,7 @@ export type CommandsType = {
   set_update_interval: { args: { interval: UpdateInterval }; result: SnapshotType };
   set_vault_lock_interval: { args: { interval: VaultLockInterval }; result: SnapshotType };
   set_show_account_names: { args: { visible: boolean }; result: SnapshotType };
+  set_steam_ids_visible: { args: { visible: boolean }; result: SnapshotType };
   set_blur_codes: { args: { enabled: boolean }; result: SnapshotType };
   set_search_scope: { args: { scope: SearchScope }; result: SnapshotType };
   create_folder: {
@@ -71,6 +72,7 @@ export type CommandsType = {
   };
   steam_guard_code: { args: { steamId: string }; result: CodeInfoType };
   steam_guard_revocation_code: { args: { steamId: string }; result: string };
+  account_login_name: { args: { steamId: string }; result: string };
   /** The native open dialog runs in Rust; `null` means it was cancelled. */
   steam_guard_pick_file: { args: { kind: PickFileKind }; result: string | null };
   steam_guard_import: { args: { path: string; passkey?: string | null }; result: SnapshotType };

@@ -30,6 +30,8 @@
   import FormError from "../ui/FormError.svelte";
   import SteamGuardCode from "./SteamGuardCode.svelte";
   import SteamGuardIcon from "./SteamGuardIcon.svelte";
+  import AccountIdentity from "../accounts/AccountIdentity.svelte";
+  import SteamIdentifiers from "../accounts/SteamIdentifiers.svelte";
   import VaultControls from "../vault/VaultControls.svelte";
   import SteamGuardConfirmations from "./SteamGuardConfirmations.svelte";
   import SteamGuardSecurity from "./SteamGuardSecurity.svelte";
@@ -38,14 +40,6 @@
 
   const controller = createSteamGuardController();
   const entry = $derived(controller.entry);
-  const subtitle = $derived.by(() => {
-    if (!entry) return "";
-    const parts = [];
-    if (entry.account_name && entry.account_name !== entry.display_name)
-      parts.push(entry.account_name);
-    if (entry.steam_id !== entry.display_name) parts.push(entry.steam_id);
-    return parts.join(" · ");
-  });
   const folderName = $derived(
     (entry?.folder_id && folderById(entry.folder_id)?.name) || t.folder_none(),
   );
@@ -82,7 +76,7 @@
     >
       <DialogHeader
         id={`${uid}-title`}
-        title={entry.display_name}
+        title={t.guard_title()}
         icon={SteamGuardIcon}
         onclose={controller.close}
         closeDisabled={controller.busy && !controller.waiting}
@@ -93,7 +87,15 @@
         backBusy={controller.busyAction === GuardAction.CANCEL_LOGIN ||
           controller.busyAction === GuardAction.CANCEL_LINK}
       />
-      {#if subtitle}<p class="dialog-subtitle steamguard-subtitle">{subtitle}</p>{/if}
+      {#if controller.vaultReady && controller.screen === SteamGuardScreen.HOME}
+        <div class="account-facts">
+          <div class="fact">
+            <span class="fact-label">{t.guard_login_name_label()}</span>
+            <AccountIdentity {entry} />
+          </div>
+          <SteamIdentifiers steamId={entry.steam_id} />
+        </div>
+      {/if}
 
       <div class="dialog-body">
         {#if controller.vault.error}

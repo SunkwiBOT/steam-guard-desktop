@@ -63,9 +63,10 @@
   border: 1px solid var(--border-strong);
   border-radius: 3px;
   background: var(--base-alt);
-  color: inherit;
+  color: var(--muted);
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
-  font-size: 0.95em;
+  font-size: 12px;
+  font-weight: 400;
   overflow-wrap: anywhere;
 }
 

@@ -33,6 +33,20 @@ pub fn steam_guard_revocation_code(
     })
 }
 
+#[tauri::command(async)]
+pub fn account_login_name(state: State<'_, AppState>, steam_id: String) -> Result<String, String> {
+    crate::logging::read("account_login_name", || {
+        let authenticator = state.authenticator();
+        let guard = lock_authenticator(&authenticator);
+        guard
+            .accounts()
+            .into_iter()
+            .find(|account| account.steam_id == steam_id)
+            .map(|account| account.account_name)
+            .ok_or_else(|| ErrorCode::AuthenticatorMissing.to_string())
+    })
+}
+
 /// The Steam ID comes from the file itself.
 #[tauri::command]
 pub async fn steam_guard_import(

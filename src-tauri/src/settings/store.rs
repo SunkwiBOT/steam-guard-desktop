@@ -82,6 +82,7 @@ fn read_settings(connection: &Connection) -> rusqlite::Result<Settings> {
         close_to_tray: read_value(connection, "close_to_tray").unwrap_or(defaults.close_to_tray),
         show_account_names: read_value(connection, "show_account_names")
             .unwrap_or(defaults.show_account_names),
+        show_steam_ids: read_value(connection, "show_steam_ids").unwrap_or(defaults.show_steam_ids),
         blur_codes: read_value(connection, "blur_codes").unwrap_or(defaults.blur_codes),
         update_interval: read_value(connection, "update_interval")
             .unwrap_or(defaults.update_interval),
@@ -110,6 +111,7 @@ fn write_settings(transaction: &Transaction<'_>, settings: &Settings) -> rusqlit
         "show_account_names",
         &settings.show_account_names,
     )?;
+    put_setting(transaction, "show_steam_ids", &settings.show_steam_ids)?;
     put_setting(transaction, "blur_codes", &settings.blur_codes)?;
     put_setting(transaction, "update_interval", &settings.update_interval)?;
     put_setting(transaction, "search_scope", &settings.search_scope)?;

@@ -217,6 +217,11 @@
     />
     <p class="settings-note">{t.settings_privacy_description()}</p>
     <SettingToggle
+      label={t.settings_privacy_hide_ids()}
+      checked={settings.show_steam_ids !== true}
+      onchange={(enabled) => run("set_steam_ids_visible", { visible: !enabled })}
+    />
+    <SettingToggle
       label={t.settings_privacy_blur_codes()}
       checked={settings.blur_codes === true}
       onchange={(enabled) => run("set_blur_codes", { enabled })}
