@@ -1,0 +1,12 @@
+{
+  "_version": 1,
+  "backup_export_title": "Vie Steam Guard -todentajat",
+  "backup_file_filter": "Steam Guard -varmuuskopio",
+  "mafile_file_filter": "Steam Desktop Authenticator -tiedosto",
+  "pick_backup_title": "Tuo Steam Guard -varmuuskopio",
+  "pick_mafile_title": "Tuo maFile-tiedosto",
+  "tray_locked": "Holvi lukittu",
+  "tray_no_accounts": "Ei tilejä",
+  "tray_open": "Avaa",
+  "tray_quit": "Lopeta"
+}

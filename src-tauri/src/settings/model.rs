@@ -1,0 +1,225 @@
+use std::collections::BTreeMap;
+
+use serde::{Deserialize, Serialize};
+
+use super::{SearchScope, UpdateInterval, VaultLockInterval};
+use crate::locale::Language;
+
+fn default_true() -> bool {
+    true
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Folder {
+    pub id: String,
+    pub name: String,
+    #[serde(default)]
+    pub color: Option<String>,
+    #[serde(default)]
+    pub icon: Option<String>,
+}
+
+/// Folder icons offered by the interface. Unknown values are never stored.
+pub const FOLDER_ICONS: [&str; 20] = [
+    "folder",
+    "folder-open",
+    "star",
+    "heart",
+    "flame",
+    "zap",
+    "trophy",
+    "crown",
+    "target",
+    "crosshair",
+    "gamepad-2",
+    "swords",
+    "shield",
+    "rocket",
+    "ghost",
+    "gem",
+    "book",
+    "music",
+    "palette",
+    "globe",
+];
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Settings {
+    #[serde(default)]
+    pub language: Language,
+    #[serde(default = "default_true")]
+    pub close_to_tray: bool,
+    #[serde(default)]
+    pub show_account_names: bool,
+    #[serde(default)]
+    pub blur_codes: bool,
+    #[serde(default)]
+    pub update_interval: UpdateInterval,
+    #[serde(default)]
+    pub search_scope: SearchScope,
+    #[serde(default)]
+    pub vault_lock_interval: VaultLockInterval,
+    #[serde(default)]
+    pub last_update_check_at: Option<u64>,
+    #[serde(default)]
+    pub folders: Vec<Folder>,
+    #[serde(default)]
+    pub account_folders: BTreeMap<String, String>,
+    #[serde(default)]
+    pub account_colors: BTreeMap<String, String>,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            language: Language::Auto,
+            close_to_tray: true,
+            show_account_names: false,
+            blur_codes: false,
+            update_interval: UpdateInterval::SixHours,
+            search_scope: SearchScope::Both,
+            vault_lock_interval: VaultLockInterval::Startup,
+            last_update_check_at: None,
+            folders: Vec::new(),
+            account_folders: BTreeMap::new(),
+            account_colors: BTreeMap::new(),
+        }
+    }
+}
+
+impl Settings {
+    pub fn create_folder(&mut self, name: &str) -> String {
+        let base = slug(name);
+        let mut id = base.clone();
+        let mut counter = 2;
+        while self.folders.iter().any(|folder| folder.id == id) {
+            id = format!("{base}-{counter}");
+            counter += 1;
+        }
+        self.folders.push(Folder {
+            id: id.clone(),
+            name: name.trim().to_string(),
+            color: None,
+            icon: None,
+        });
+        id
+    }
+
+    pub fn set_folder_color(&mut self, id: &str, color: Option<&str>) -> bool {
+        let value = color
+            .filter(|value| is_safe_color(value))
+            .map(str::to_string);
+        match self.folders.iter_mut().find(|folder| folder.id == id) {
+            Some(folder) => {
+                folder.color = value;
+                true
+            }
+            None => false,
+        }
+    }
+
+    pub fn set_folder_icon(&mut self, id: &str, icon: Option<&str>) -> bool {
+        let value = icon
+            .filter(|value| FOLDER_ICONS.contains(value))
+            .map(str::to_string);
+        match self.folders.iter_mut().find(|folder| folder.id == id) {
+            Some(folder) => {
+                folder.icon = value;
+                true
+            }
+            None => false,
+        }
+    }
+
+    pub fn rename_folder(&mut self, id: &str, name: &str) -> bool {
+        match self.folders.iter_mut().find(|folder| folder.id == id) {
+            Some(folder) => {
+                folder.name = name.trim().to_string();
+                true
+            }
+            None => false,
+        }
+    }
+
+    pub fn delete_folder(&mut self, id: &str) -> bool {
+        let before = self.folders.len();
+        self.folders.retain(|folder| folder.id != id);
+        self.account_folders.retain(|_, folder| folder != id);
+        self.folders.len() != before
+    }
+
+    /// Moves an account into a folder, or back to the root when `folder` is
+    /// `None` or points at a folder that does not exist.
+    pub fn set_account_folder(&mut self, steam_id: &str, folder: Option<&str>) {
+        let valid = folder
+            .map(|id| self.folders.iter().any(|entry| entry.id == id))
+            .unwrap_or(false);
+        match (valid, folder) {
+            (true, Some(id)) => {
+                self.account_folders
+                    .insert(steam_id.to_string(), id.to_string());
+            }
+            _ => {
+                self.account_folders.remove(steam_id);
+            }
+        }
+    }
+
+    pub fn set_account_color(&mut self, steam_id: &str, color: Option<&str>) {
+        match color.filter(|value| is_safe_color(value)) {
+            Some(color) => {
+                self.account_colors
+                    .insert(steam_id.to_string(), color.to_string());
+            }
+            None => {
+                self.account_colors.remove(steam_id);
+            }
+        }
+    }
+
+    /// Drops everything kept about an account once it is no longer listed.
+    pub fn forget_account(&mut self, steam_id: &str) {
+        self.account_folders.remove(steam_id);
+        self.account_colors.remove(steam_id);
+    }
+
+    pub fn account_folder(&self, steam_id: &str) -> Option<&str> {
+        self.account_folders.get(steam_id).map(String::as_str)
+    }
+
+    pub fn account_color(&self, steam_id: &str) -> Option<&str> {
+        self.account_colors.get(steam_id).map(String::as_str)
+    }
+}
+
+pub(super) fn slug(name: &str) -> String {
+    let mut slug: String = name
+        .trim()
+        .to_lowercase()
+        .chars()
+        .map(|character| {
+            if character.is_ascii_alphanumeric() {
+                character
+            } else {
+                '-'
+            }
+        })
+        .collect();
+    while slug.contains("--") {
+        slug = slug.replace("--", "-");
+    }
+    let trimmed = slug.trim_matches('-').to_string();
+    if trimmed.is_empty() {
+        "folder".to_string()
+    } else {
+        trimmed
+    }
+}
+
+/// ! Only plain hex colours are stored, so a value can never inject CSS.
+pub(super) fn is_safe_color(value: &str) -> bool {
+    let bytes = value.as_bytes();
+    matches!(bytes.len(), 4 | 7 | 9)
+        && bytes[0] == b'#'
+        && bytes[1..].iter().all(u8::is_ascii_hexdigit)
+}

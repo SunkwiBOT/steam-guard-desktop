@@ -1,0 +1,198 @@
+.modal[hidden] {
+  display: none;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 40;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--backdrop);
+}
+
+/* Native dialogs share the overlay of the div-based modals. */
+.backup-dialog::backdrop,
+.vault-password-dialog::backdrop {
+  background: var(--backdrop);
+}
+
+.dialog {
+  position: relative;
+  width: min(1160px, 94vw);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 18px 14px;
+  background: var(--window);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+
+.dialog.small {
+  width: min(520px, 92vw);
+  height: auto;
+  overflow: auto;
+}
+
+.dialog.backup-dialog {
+  position: fixed;
+  inset: 0;
+  height: fit-content;
+  margin: auto;
+  color: var(--text);
+}
+
+.backup-dialog:not([open]) {
+  display: none;
+}
+
+.backup-dialog form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.checkbox[hidden],
+.busy[hidden],
+.toast[hidden],
+.context-menu[hidden],
+.modal[hidden] {
+  display: none;
+}
+
+.dialog-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dialog-title,
+.block-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-strong);
+}
+
+.dialog-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  min-width: 0;
+  line-height: 1.3;
+  align-items: flex-start;
+}
+
+.dialog-title .action-icon {
+  margin-top: 4px;
+}
+
+.dialog-title-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.dialog-head > .icon-button {
+  flex: 0 0 auto;
+}
+
+.dialog-head > .dialog-title {
+  flex: 1 1 auto;
+}
+
+.dialog-back {
+  margin-top: 1px;
+}
+
+.dialog-subtitle {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.dialog-subtitle .account-caption {
+  color: var(--text-strong);
+}
+
+.dialog-text {
+  color: var(--text);
+  margin: 4px 0 0;
+}
+
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 3px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.icon-button:hover:not(:disabled) {
+  background: var(--button);
+  color: var(--text-bright);
+}
+
+.icon-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.history-notice {
+  margin: 0;
+  padding: 7px 9px;
+  background: var(--notice-bg);
+  border: 1px solid var(--notice-border);
+  border-radius: 3px;
+  color: var(--notice-text);
+}
+
+.dialog-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  background: var(--base);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0 10px 10px;
+}
+
+.dialog-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.progress {
+  height: 8px;
+  margin: 14px 0 4px;
+  border-radius: 4px;
+  background: var(--base);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.progress-bar {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 3px;
+  background: var(--accent);
+  transition: width 0.2s ease;
+}

@@ -1,0 +1,12 @@
+{
+  "_version": 1,
+  "backup_export_title": "Експортувати автентифікатори Steam Guard",
+  "backup_file_filter": "Резервна копія Steam Guard",
+  "mafile_file_filter": "Файл Steam Desktop Authenticator",
+  "pick_backup_title": "Імпортувати резервну копію Steam Guard",
+  "pick_mafile_title": "Імпортувати maFile",
+  "tray_locked": "Сховище заблоковано",
+  "tray_no_accounts": "Немає облікових записів",
+  "tray_open": "Відкрити",
+  "tray_quit": "Вийти"
+}

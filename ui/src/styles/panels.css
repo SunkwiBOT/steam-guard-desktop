@@ -1,0 +1,159 @@
+.fact {
+  padding: 8px 10px;
+  background: var(--base);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.fact-label {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.fact-value {
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.fact-value.accent {
+  color: var(--accent);
+}
+
+.fact-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.block-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.settings-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(252px, 1fr));
+  gap: 12px;
+  align-content: start;
+}
+
+.settings-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  background: var(--base-alt);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.settings-card.wide {
+  grid-column: 1 / -1;
+}
+
+.settings-card-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.setting-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.setting-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.setting-control .switch[hidden] {
+  display: none;
+}
+
+.copy-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 25px;
+  height: 25px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.copy-button:hover:not(:disabled) {
+  background: var(--button);
+  border-color: var(--border-strong);
+  color: var(--text-bright);
+}
+
+.copy-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.copy-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.account-caption {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 9px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.account-caption .avatar {
+  flex: 0 0 auto;
+  font-size: 12px;
+  outline: 1px solid var(--avatar-outline);
+}
+
+.account-caption > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-caption.inline {
+  display: inline-flex;
+  position: relative;
+  max-width: 100%;
+  min-height: var(--avatar-size);
+  padding-left: calc(var(--avatar-size) + 4px);
+  margin-top: 0;
+  color: inherit;
+  font-size: inherit;
+  vertical-align: baseline;
+}
+
+.account-caption.inline .avatar {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+}

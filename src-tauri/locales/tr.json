@@ -1,0 +1,12 @@
+{
+  "_version": 1,
+  "backup_export_title": "Steam Guard kimlik doğrulayıcılarını dışa aktar",
+  "backup_file_filter": "Steam Guard yedeği",
+  "mafile_file_filter": "Steam Desktop Authenticator dosyası",
+  "pick_backup_title": "Steam Guard yedeği içe aktar",
+  "pick_mafile_title": "maFile içe aktar",
+  "tray_locked": "Kasa kilitli",
+  "tray_no_accounts": "Hesap yok",
+  "tray_open": "Aç",
+  "tray_quit": "Çık"
+}

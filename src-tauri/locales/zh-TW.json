@@ -1,0 +1,12 @@
+{
+  "_version": 1,
+  "backup_export_title": "匯出 Steam Guard 驗證器",
+  "backup_file_filter": "Steam Guard 備份",
+  "mafile_file_filter": "Steam Desktop Authenticator 檔案",
+  "pick_backup_title": "匯入 Steam Guard 備份",
+  "pick_mafile_title": "匯入 maFile",
+  "tray_locked": "保險庫已鎖定",
+  "tray_no_accounts": "沒有帳戶",
+  "tray_open": "開啟",
+  "tray_quit": "結束"
+}

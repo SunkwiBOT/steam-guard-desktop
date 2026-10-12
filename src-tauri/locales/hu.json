@@ -1,0 +1,12 @@
+{
+  "_version": 1,
+  "backup_export_title": "Steam Guard hitelesítők exportálása",
+  "backup_file_filter": "Steam Guard biztonsági mentés",
+  "mafile_file_filter": "Steam Desktop Authenticator fájl",
+  "pick_backup_title": "Steam Guard biztonsági mentés importálása",
+  "pick_mafile_title": "maFile importálása",
+  "tray_locked": "Széf zárolva",
+  "tray_no_accounts": "Nincsenek fiókok",
+  "tray_open": "Megnyitás",
+  "tray_quit": "Kilépés"
+}

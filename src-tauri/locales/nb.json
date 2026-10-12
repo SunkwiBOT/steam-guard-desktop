@@ -1,0 +1,12 @@
+{
+  "_version": 1,
+  "backup_export_title": "Eksporter Steam Guard-autentisatorer",
+  "backup_file_filter": "Steam Guard-sikkerhetskopi",
+  "mafile_file_filter": "Steam Desktop Authenticator-fil",
+  "pick_backup_title": "Importer en Steam Guard-sikkerhetskopi",
+  "pick_mafile_title": "Importer en maFile",
+  "tray_locked": "Hvelvet er låst",
+  "tray_no_accounts": "Ingen kontoer",
+  "tray_open": "Åpne",
+  "tray_quit": "Avslutt"
+}

@@ -1,0 +1,12 @@
+{
+  "_version": 1,
+  "backup_export_title": "Xuất trình xác thực Steam Guard",
+  "backup_file_filter": "Bản sao lưu Steam Guard",
+  "mafile_file_filter": "Tệp Steam Desktop Authenticator",
+  "pick_backup_title": "Nhập bản sao lưu Steam Guard",
+  "pick_mafile_title": "Nhập tệp maFile",
+  "tray_locked": "Kho đã khóa",
+  "tray_no_accounts": "Không có tài khoản",
+  "tray_open": "Mở",
+  "tray_quit": "Thoát"
+}

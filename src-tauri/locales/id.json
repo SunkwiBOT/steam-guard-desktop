@@ -1,0 +1,12 @@
+{
+  "_version": 1,
+  "backup_export_title": "Ekspor autentikator Steam Guard",
+  "backup_file_filter": "Cadangan Steam Guard",
+  "mafile_file_filter": "File Steam Desktop Authenticator",
+  "pick_backup_title": "Impor cadangan Steam Guard",
+  "pick_mafile_title": "Impor maFile",
+  "tray_locked": "Brankas terkunci",
+  "tray_no_accounts": "Tidak ada akun",
+  "tray_open": "Buka",
+  "tray_quit": "Keluar"
+}

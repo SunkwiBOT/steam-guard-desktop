@@ -1,0 +1,12 @@
+{
+  "_version": 1,
+  "backup_export_title": "Εξαγωγή επαληθευτών Steam Guard",
+  "backup_file_filter": "Αντίγραφο ασφαλείας Steam Guard",
+  "mafile_file_filter": "Αρχείο Steam Desktop Authenticator",
+  "pick_backup_title": "Εισαγωγή αντιγράφου ασφαλείας Steam Guard",
+  "pick_mafile_title": "Εισαγωγή αρχείου maFile",
+  "tray_locked": "Θησαυροφυλάκιο κλειδωμένο",
+  "tray_no_accounts": "Χωρίς λογαριασμούς",
+  "tray_open": "Άνοιγμα",
+  "tray_quit": "Έξοδος"
+}

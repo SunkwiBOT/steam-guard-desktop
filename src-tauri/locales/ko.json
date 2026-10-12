@@ -1,0 +1,12 @@
+{
+  "_version": 1,
+  "backup_export_title": "Steam Guard 인증기 내보내기",
+  "backup_file_filter": "Steam Guard 백업",
+  "mafile_file_filter": "Steam Desktop Authenticator 파일",
+  "pick_backup_title": "Steam Guard 백업 가져오기",
+  "pick_mafile_title": "maFile 가져오기",
+  "tray_locked": "보관함 잠김",
+  "tray_no_accounts": "계정 없음",
+  "tray_open": "열기",
+  "tray_quit": "종료"
+}

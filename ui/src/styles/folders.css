@@ -1,0 +1,378 @@
+.card-accent {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--card-accent, transparent);
+}
+
+.card-folder {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--panel);
+  color: var(--accent);
+}
+
+.card-folder svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* The pending badge shares the corner with the folder bubble. */
+.card.has-folder .card-badge {
+  left: 36px;
+}
+
+.folder-card {
+  justify-content: flex-start;
+}
+
+.back-card {
+  justify-content: center;
+}
+
+.folder-card .folder-icon,
+.back-card .folder-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 62px;
+  height: 62px;
+  flex-shrink: 0;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: var(--avatar);
+  color: var(--accent);
+}
+
+.back-card .folder-icon {
+  color: var(--text);
+}
+
+.folder-card .card-meta {
+  justify-content: center;
+  margin-top: auto;
+  color: var(--muted);
+}
+
+.folder-card .card-name {
+  white-space: normal;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
+
+.breadcrumb {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 12px 0;
+  min-height: 34px;
+}
+
+.crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+}
+
+.crumb:hover {
+  background: var(--base-alt);
+  color: var(--text-bright);
+}
+
+.crumb.current {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.crumb:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--accent);
+  outline: none;
+}
+
+.crumb-sep {
+  color: var(--separator);
+}
+
+.picker-caret {
+  margin-left: auto;
+  color: var(--muted);
+}
+
+.color-grid,
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 26px);
+  justify-content: start;
+  gap: 6px;
+  min-height: 30px;
+  align-items: center;
+}
+
+.color-swatch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.color-swatch:hover:not(:disabled) {
+  border-color: var(--border-strong);
+}
+
+.color-swatch.active {
+  border-color: var(--surface-bright);
+}
+
+.color-swatch.none {
+  background: var(--base);
+  border: 1px dashed var(--border-strong);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.color-swatch:disabled,
+.icon-choice:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.icon-choice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 7px;
+  border: 2px solid transparent;
+  background: var(--base);
+  color: inherit;
+  cursor: pointer;
+}
+
+.icon-choice:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.icon-choice.active {
+  border-color: var(--surface-bright);
+}
+
+.folder-row-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--avatar);
+  color: var(--accent);
+}
+
+.folder-caption .folder-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--folder-size);
+  height: var(--folder-size);
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--avatar);
+  color: var(--accent);
+  line-height: var(--folder-size);
+  text-align: center;
+}
+
+.folder-caption.inline .folder-badge {
+  display: inline-block;
+  margin-right: 4px;
+  vertical-align: -0.16em;
+}
+
+.folder-caption.inline,
+.folder-caption.inline > span:last-child {
+  display: inline;
+}
+
+.folder-heading .folder-caption {
+  margin-top: 0;
+}
+
+.account-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.account-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.account-block .select-button {
+  min-width: 0;
+}
+
+/* Folder editor: a native dialog sharing the look of the div-based ones. */
+.folder-editor::backdrop {
+  background: var(--backdrop);
+}
+
+.dialog.folder-editor {
+  position: fixed;
+  inset: 0;
+  width: min(680px, 94vw);
+  height: fit-content;
+  margin: auto;
+  color: var(--text);
+}
+
+.folder-editor:not([open]) {
+  display: none;
+}
+
+.folder-editor-name {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.folder-editor-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.folder-editor-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.folder-editor-field:first-child {
+  border-right: 1px solid var(--border);
+  padding-right: 16px;
+}
+
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  /* ! Flex children would otherwise shrink to nothing inside the dialog. */
+  flex: 0 0 auto;
+  gap: 4px;
+  max-height: 190px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--base);
+  padding: 6px;
+}
+
+.settings-list > .settings-note {
+  margin: 4px 6px;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px;
+  border-radius: 3px;
+}
+
+.settings-row:hover {
+  background: var(--surface-hover);
+}
+
+.settings-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.settings-row .button {
+  min-height: 24px;
+  padding: 3px 10px;
+  font-size: 12px;
+}
+
+.settings-add {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.settings-add .input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.menu-folder-picker {
+  margin: 4px 8px;
+}
+
+.menu-folder-picker .select-button {
+  min-width: 0;
+}
+
+.menu-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 8px 6px;
+}
+
+.menu-icons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(30px, 1fr));
+  gap: 6px;
+  padding: 4px 8px 6px;
+}
+
+.menu-icons .icon-choice {
+  width: 28px;
+  height: 28px;
+}

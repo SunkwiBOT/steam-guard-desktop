@@ -1,0 +1,12 @@
+{
+  "_version": 1,
+  "backup_export_title": "Exportera Steam Guard-autentiserare",
+  "backup_file_filter": "Steam Guard-säkerhetskopia",
+  "mafile_file_filter": "Steam Desktop Authenticator-fil",
+  "pick_backup_title": "Importera en Steam Guard-säkerhetskopia",
+  "pick_mafile_title": "Importera en maFile",
+  "tray_locked": "Valvet är låst",
+  "tray_no_accounts": "Inga konton",
+  "tray_open": "Öppna",
+  "tray_quit": "Avsluta"
+}

@@ -1,0 +1,12 @@
+{
+  "_version": 1,
+  "backup_export_title": "Exportați autentificatoare Steam Guard",
+  "backup_file_filter": "Copie de rezervă Steam Guard",
+  "mafile_file_filter": "Fișier Steam Desktop Authenticator",
+  "pick_backup_title": "Importați o copie de rezervă Steam Guard",
+  "pick_mafile_title": "Importați un maFile",
+  "tray_locked": "Seif blocat",
+  "tray_no_accounts": "Niciun cont",
+  "tray_open": "Deschideți",
+  "tray_quit": "Ieșiți"
+}

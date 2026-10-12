@@ -1,0 +1,50 @@
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 10px;
+  border-top: 1px solid transparent;
+}
+
+.footer-count {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.vault-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 4px 8px;
+  min-height: 26px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--green);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.vault-state.locked {
+  color: var(--muted);
+}
+
+.vault-state.warning {
+  color: var(--caution-text);
+}
+
+.vault-state:hover {
+  background: var(--surface-hover-deep);
+  border-color: var(--border-strong);
+  color: var(--text-bright);
+}
+
+.vault-state-countdown {
+  color: var(--muted);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}

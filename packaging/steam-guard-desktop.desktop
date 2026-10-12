@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name={{name}}
+Comment={{comment}}
+Exec={{exec}}{{#if exec_arg}} {{exec_arg}}{{/if}}
+Icon={{icon}}
+Terminal=false
+Categories={{categories}}
+# ! Matches the GTK program name set in main.rs, which is also the Wayland app
+# id and the name of this file; the icon name stays "steamguard" because KDE
+# cuts icon names at the first dash and "steam-..." would give Steam's icon.
+StartupWMClass=Steam Guard Desktop
+StartupNotify=true

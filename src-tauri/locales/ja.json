@@ -1,0 +1,12 @@
+{
+  "_version": 1,
+  "backup_export_title": "Steam Guard 認証器をエクスポート",
+  "backup_file_filter": "Steam Guard バックアップ",
+  "mafile_file_filter": "Steam Desktop Authenticator ファイル",
+  "pick_backup_title": "Steam Guard バックアップをインポート",
+  "pick_mafile_title": "maFile をインポート",
+  "tray_locked": "保管庫はロック中",
+  "tray_no_accounts": "アカウントなし",
+  "tray_open": "開く",
+  "tray_quit": "終了"
+}

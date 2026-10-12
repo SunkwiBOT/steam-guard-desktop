@@ -1,0 +1,107 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Steam Guard Desktop",
+  "version": "1.0.0",
+  "identifier": "io.github.sunkwibot.steamguard",
+  "mainBinaryName": "steamguard",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../ui/dist"
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEZGNjJCOTRBMkQ1QjhFOEIKUldTTGpsc3RTcmxpLzNTdVBMVlNRbDhydGdKMnAzbEVCTWxhTGFtcXVidUdySWIxVU9pMklHaXEK",
+      "endpoints": [
+        "https://github.com/SunkwiBOT/steam-guard-desktop/releases/latest/download/latest.json"
+      ]
+    }
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [
+      {
+        "label": "main",
+        "title": "Steam Guard Desktop",
+        "width": 1040,
+        "height": 640,
+        "minWidth": 820,
+        "minHeight": 480,
+        "resizable": true,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "createUpdaterArtifacts": true,
+    "targets": ["appimage", "rpm", "deb", "nsis", "dmg"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "category": "Utility",
+    "shortDescription": "Steam Guard authenticator for the desktop",
+    "longDescription": "Generates Steam Guard codes, approves trade and market confirmations, links new authenticators, imports Steam Desktop Authenticator maFiles and exports encrypted backups. Linux, Windows and macOS.",
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": false
+      },
+      "deb": {
+        "desktopTemplate": "../packaging/steam-guard-desktop.desktop"
+      },
+      "rpm": {
+        "epoch": 0,
+        "release": "1",
+        "desktopTemplate": "../packaging/steam-guard-desktop.desktop"
+      }
+    },
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": [
+          "English",
+          "French",
+          "German",
+          "Spanish",
+          "SpanishInternational",
+          "Portuguese",
+          "PortugueseBR",
+          "Italian",
+          "Dutch",
+          "Polish",
+          "Russian",
+          "Ukrainian",
+          "Czech",
+          "Hungarian",
+          "Romanian",
+          "Bulgarian",
+          "Greek",
+          "Turkish",
+          "Swedish",
+          "Danish",
+          "Norwegian",
+          "Finnish",
+          "SimpChinese",
+          "TradChinese",
+          "Japanese",
+          "Korean",
+          "Thai",
+          "Vietnamese",
+          "Indonesian"
+        ],
+        "displayLanguageSelector": false
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "10.15"
+    }
+  }
+}

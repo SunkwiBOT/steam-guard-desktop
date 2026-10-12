@@ -1,0 +1,12 @@
+{
+  "_version": 1,
+  "backup_export_title": "Експортиране на удостоверители Steam Guard",
+  "backup_file_filter": "Резервно копие на Steam Guard",
+  "mafile_file_filter": "Файл на Steam Desktop Authenticator",
+  "pick_backup_title": "Импортиране на резервно копие на Steam Guard",
+  "pick_mafile_title": "Импортиране на maFile",
+  "tray_locked": "Трезорът е заключен",
+  "tray_no_accounts": "Няма акаунти",
+  "tray_open": "Отваряне",
+  "tray_quit": "Изход"
+}

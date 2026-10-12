@@ -1,0 +1,12 @@
+{
+  "_version": 1,
+  "backup_export_title": "导出 Steam Guard 令牌",
+  "backup_file_filter": "Steam Guard 备份",
+  "mafile_file_filter": "Steam Desktop Authenticator 文件",
+  "pick_backup_title": "导入 Steam Guard 备份",
+  "pick_mafile_title": "导入 maFile",
+  "tray_locked": "保险库已锁定",
+  "tray_no_accounts": "没有账户",
+  "tray_open": "打开",
+  "tray_quit": "退出"
+}

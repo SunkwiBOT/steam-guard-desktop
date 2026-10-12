@@ -1,0 +1,12 @@
+{
+  "_version": 1,
+  "backup_export_title": "Steam Guard-Authentifikatoren exportieren",
+  "backup_file_filter": "Steam Guard-Sicherung",
+  "mafile_file_filter": "Steam Desktop Authenticator-Datei",
+  "pick_backup_title": "Steam Guard-Sicherung importieren",
+  "pick_mafile_title": "maFile importieren",
+  "tray_locked": "Tresor gesperrt",
+  "tray_no_accounts": "Keine Konten",
+  "tray_open": "Öffnen",
+  "tray_quit": "Beenden"
+}

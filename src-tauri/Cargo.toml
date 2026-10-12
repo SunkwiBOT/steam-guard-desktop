@@ -1,0 +1,43 @@
+[package]
+name = "steam-guard-desktop"
+description = "Steam Guard authenticator desktop application."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[features]
+# ! Without it Tauri compiles in development mode and loads `devUrl` instead of
+# the interface embedded in the binary. Required for release builds.
+custom-protocol = ["tauri/custom-protocol"]
+
+[dependencies]
+guard-core = { path = "../guard-core" }
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+tauri-plugin-single-instance = "2"
+tauri-plugin-autostart = "2"
+tauri-plugin-updater = "2"
+tauri-plugin-opener = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-clipboard-manager = "2"
+serde = { workspace = true }
+serde_json = { workspace = true }
+rusqlite = { version = "0.40", features = ["bundled"] }
+zeroize = "1"
+rust-i18n = "3"
+sys-locale = "0.3"
+dirs = "6"
+
+# ! Gives the window its app id / WM class on Linux, so the desktop pairs it
+# with the installed .desktop entry and shows the application icon.
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = "0.18"
+glib = "0.18"
+
+[[bin]]
+name = "steamguard"
+path = "src/main.rs"

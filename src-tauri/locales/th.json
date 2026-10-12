@@ -1,0 +1,12 @@
+{
+  "_version": 1,
+  "backup_export_title": "ส่งออกตัวยืนยันตัวตน Steam Guard",
+  "backup_file_filter": "ข้อมูลสำรอง Steam Guard",
+  "mafile_file_filter": "ไฟล์ Steam Desktop Authenticator",
+  "pick_backup_title": "นำเข้าข้อมูลสำรอง Steam Guard",
+  "pick_mafile_title": "นำเข้าไฟล์ maFile",
+  "tray_locked": "ตู้นิรภัยถูกล็อก",
+  "tray_no_accounts": "ไม่มีบัญชี",
+  "tray_open": "เปิด",
+  "tray_quit": "ออก"
+}

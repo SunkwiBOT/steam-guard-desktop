@@ -1,0 +1,250 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
+mod auth_commands;
+mod base64;
+mod clipboard;
+mod commands;
+mod locale;
+mod log_commands;
+mod logging;
+mod settings;
+mod state;
+mod tray;
+
+use std::time::Duration;
+
+use tauri::{AppHandle, Emitter, Manager, WindowEvent};
+
+use crate::state::AppState;
+
+rust_i18n::i18n!("locales", fallback = "en");
+
+fn main() {
+    prepare_linux_display();
+    // Before the state is built, so a database that cannot be opened leaves a
+    // trace instead of failing silently.
+    logging::init(settings::config_dir());
+
+    tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
+            show_main_window(app);
+        }))
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            None::<Vec<&str>>,
+        ))
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
+        .manage(AppState::new())
+        .manage(commands::updates::PendingUpdate::new())
+        .invoke_handler(tauri::generate_handler![
+            commands::snapshots::snapshot,
+            commands::snapshots::refresh,
+            commands::preferences::app_info,
+            commands::preferences::set_language,
+            commands::preferences::set_close_to_tray,
+            commands::preferences::set_update_interval,
+            commands::preferences::set_vault_lock_interval,
+            commands::preferences::set_show_account_names,
+            commands::preferences::set_blur_codes,
+            commands::preferences::set_search_scope,
+            commands::preferences::create_folder,
+            commands::preferences::update_folder,
+            commands::preferences::delete_folder,
+            commands::preferences::assign_folder,
+            commands::preferences::set_account_color,
+            commands::preferences::set_folder_color,
+            commands::preferences::set_folder_icon,
+            commands::preferences::set_window_active,
+            commands::preferences::autostart_status,
+            commands::preferences::set_autostart,
+            commands::updates::check_for_update,
+            commands::updates::download_update,
+            commands::updates::apply_update,
+            commands::profiles::profile_refresh,
+            log_commands::logs_snapshot,
+            log_commands::logs_open_directory,
+            clipboard::clipboard_write_text,
+            auth_commands::vault::authenticator_status,
+            auth_commands::vault::authenticator_accounts,
+            auth_commands::vault::authenticator_unlock,
+            auth_commands::vault::authenticator_lock,
+            auth_commands::vault::authenticator_set_passphrase,
+            auth_commands::guard::steam_guard_code,
+            auth_commands::guard::steam_guard_revocation_code,
+            auth_commands::guard::steam_guard_import,
+            auth_commands::guard::steam_guard_confirmations,
+            auth_commands::guard::steam_guard_confirmation_action,
+            auth_commands::guard::steam_guard_remove,
+            auth_commands::guard::steam_guard_forget,
+            auth_commands::files::steam_guard_pick_file,
+            auth_commands::backup::steam_guard_export_backup,
+            auth_commands::backup::steam_guard_import_backup,
+            auth_commands::login::steam_guard_login_password,
+            auth_commands::login::steam_guard_login_qr,
+            auth_commands::login::steam_guard_login_finish,
+            auth_commands::login::steam_guard_login_cancel,
+            auth_commands::link::steam_guard_link_start,
+            auth_commands::link::steam_guard_link_finalize,
+            auth_commands::link::steam_guard_link_transfer_start,
+            auth_commands::link::steam_guard_link_transfer_finish,
+            auth_commands::link::steam_guard_link_revoke,
+            auth_commands::link::steam_guard_link_cancel,
+        ])
+        .setup(|app| {
+            let previous_panic_hook = std::panic::take_hook();
+            std::panic::set_hook(Box::new(move |info| {
+                // ! Panic payloads can contain secrets: never write them to the log.
+                logging::write("runtime: panic");
+                previous_panic_hook(info);
+            }));
+            logging::write(&format!(
+                "start: {} {}",
+                app.package_info().name,
+                app.package_info().version
+            ));
+            logging::write(&format!(
+                "environment: os={} arch={} debug={}",
+                std::env::consts::OS,
+                std::env::consts::ARCH,
+                cfg!(debug_assertions)
+            ));
+            {
+                let state = app.state::<AppState>();
+                let authenticator = state.authenticator();
+                let vault = state::lock_authenticator(&authenticator).status();
+                logging::write(&format!(
+                    "vault: encrypted={} locked={} indexed={} accounts={} load_error={}",
+                    vault.encrypted,
+                    vault.locked,
+                    vault.indexed,
+                    vault.count,
+                    vault.error.is_some()
+                ));
+            }
+            if let Some(window) = app.get_webview_window("main") {
+                configure_window(&window);
+            }
+            let tray_available = tray::install(app.handle()).unwrap_or_else(|error| {
+                logging::write("tray: creation_failed");
+                eprintln!("Unable to create the tray icon: {error}");
+                false
+            });
+            logging::write(&format!("tray: available={tray_available}"));
+            app.state::<AppState>().set_tray_available(tray_available);
+            if tray_available {
+                tray::refresh_menu(app.handle());
+            }
+            start_vault_lock_loop(app.handle().clone());
+            Ok(())
+        })
+        .on_window_event(|window, event| match event {
+            WindowEvent::CloseRequested { api, .. } => {
+                let state = window.app_handle().state::<AppState>();
+                let close_to_tray = state.settings().close_to_tray;
+                // Hiding without a tray icon would leave the app unreachable.
+                if state.tray_available() && close_to_tray {
+                    api.prevent_close();
+                    state.set_window_active(false);
+                    let _ = window.hide();
+                } else {
+                    window.app_handle().exit(0);
+                }
+            }
+            WindowEvent::Focused(focused) => {
+                window
+                    .app_handle()
+                    .state::<AppState>()
+                    .set_window_active(*focused);
+            }
+            _ => {}
+        })
+        .build(tauri::generate_context!())
+        .expect("failed to build the Steam Guard Desktop window")
+        .run(|_app_handle, event| {
+            if matches!(event, tauri::RunEvent::Exit) {
+                logging::write("exit: normal");
+            }
+        });
+}
+
+/// ! Sets the icon, the X11 `WM_CLASS` and the Wayland `app_id`: without them
+/// the compositor cannot pair the window with the installed `.desktop` entry
+/// and shows a generic placeholder icon.
+fn configure_window(window: &tauri::WebviewWindow) {
+    if let Ok(icon) = tauri::image::Image::from_bytes(include_bytes!("../icons/128x128.png")) {
+        let _ = window.set_icon(icon);
+    }
+
+    #[cfg(target_os = "linux")]
+    gtk::Window::set_default_icon_name("steamguard");
+}
+
+/// ! WebKitGTK's DMABUF renderer fails on Wayland with the NVIDIA driver, so it
+/// is disabled in that case only; GTK still picks Wayland or X11 on its own.
+#[cfg(target_os = "linux")]
+fn prepare_linux_display() {
+    // ! Before GTK starts: the Wayland app id is the program name, and KWin
+    // looks up "<app id>.desktop" for the window icon. The bundler names that
+    // entry after the product name, so the two must be identical. The icon
+    // name stays "steamguard": a "steam-" prefix would resolve to the Steam
+    // client's icon in some themes.
+    glib::set_prgname(Some("Steam Guard Desktop"));
+    glib::set_application_name("Steam Guard Desktop");
+
+    if std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_some() {
+        return;
+    }
+
+    let wayland = std::env::var_os("WAYLAND_DISPLAY").is_some()
+        || std::env::var("XDG_SESSION_TYPE").is_ok_and(|value| value == "wayland");
+    let nvidia = std::path::Path::new("/sys/module/nvidia").exists()
+        || std::path::Path::new("/proc/driver/nvidia").exists();
+
+    if wayland && nvidia {
+        std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+fn prepare_linux_display() {}
+
+pub fn show_main_window(app: &AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.show();
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+
+        // ! Wayland refuses focus changes from an unfocused application, so a
+        // tray click would only raise the window: present() asks properly.
+        #[cfg(target_os = "linux")]
+        {
+            if let Ok(gtk_window) = window.gtk_window() {
+                use gtk::prelude::GtkWindowExt;
+                gtk_window.present();
+            }
+        }
+
+        let _ = window.set_always_on_top(true);
+        let handle = window.clone();
+        std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_millis(700));
+            let _ = handle.set_always_on_top(false);
+            let _ = handle.set_focus();
+        });
+    }
+}
+
+/// The idle deadline is checked in the background too, so a hidden window
+/// never keeps the vault open past its interval.
+fn start_vault_lock_loop(app: AppHandle) {
+    std::thread::spawn(move || loop {
+        std::thread::sleep(Duration::from_secs(15));
+        if app.state::<AppState>().lock_vault_if_due() {
+            let _ = app.emit("vault-locked", ());
+            tray::refresh_menu(&app);
+        }
+    });
+}

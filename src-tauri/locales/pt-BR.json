@@ -1,0 +1,12 @@
+{
+  "_version": 1,
+  "backup_export_title": "Exportar autenticadores Steam Guard",
+  "backup_file_filter": "Backup Steam Guard",
+  "mafile_file_filter": "Arquivo Steam Desktop Authenticator",
+  "pick_backup_title": "Importar um backup Steam Guard",
+  "pick_mafile_title": "Importar um maFile",
+  "tray_locked": "Cofre bloqueado",
+  "tray_no_accounts": "Nenhuma conta",
+  "tray_open": "Abrir",
+  "tray_quit": "Sair"
+}
