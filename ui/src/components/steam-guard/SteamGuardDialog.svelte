@@ -76,7 +76,7 @@
     >
       <DialogHeader
         id={`${uid}-title`}
-        title={t.guard_title()}
+        title={entry.display_name}
         icon={SteamGuardIcon}
         onclose={controller.close}
         closeDisabled={controller.busy && !controller.waiting}

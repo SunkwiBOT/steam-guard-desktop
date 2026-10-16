@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use guard_core::authenticator::{
-    confirmation_action, confirmations, remove_authenticator, CodeInfo, ConfirmationItem,
+    confirmation_action, confirmations, remove_authenticator, AuthError, CodeInfo, ConfirmationItem,
 };
 use guard_core::error_code::ErrorCode;
 use tauri::{AppHandle, State};
@@ -36,14 +36,19 @@ pub fn steam_guard_revocation_code(
 #[tauri::command(async)]
 pub fn account_login_name(state: State<'_, AppState>, steam_id: String) -> Result<String, String> {
     crate::logging::read("account_login_name", || {
-        let authenticator = state.authenticator();
-        let guard = lock_authenticator(&authenticator);
-        guard
-            .accounts()
-            .into_iter()
-            .find(|account| account.steam_id == steam_id)
-            .map(|account| account.account_name)
-            .ok_or_else(|| ErrorCode::AuthenticatorMissing.to_string())
+        let stored = {
+            let authenticator = state.authenticator();
+            let guard = lock_authenticator(&authenticator);
+            guard.account_name(&steam_id)
+        };
+        // A pending link may only know the name typed at sign-in.
+        match stored {
+            Ok(name) if !name.is_empty() => Ok(name),
+            Ok(_) | Err(AuthError::Missing) => state
+                .account_name(&steam_id)
+                .ok_or_else(|| ErrorCode::AuthenticatorMissing.to_string()),
+            Err(error) => Err(error.to_string()),
+        }
     })
 }
 

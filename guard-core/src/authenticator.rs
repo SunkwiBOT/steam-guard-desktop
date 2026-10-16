@@ -140,6 +140,11 @@ impl Authenticator {
             && !self.vault.pending.contains(steam_id)
     }
 
+    /// Includes pending links, whose name may still be empty.
+    pub fn account_name(&self, steam_id: &str) -> Result<String, AuthError> {
+        Ok(self.vault.get(steam_id)?.account_name.clone())
+    }
+
     pub fn code(&self, steam_id: &str) -> Result<CodeInfo, AuthError> {
         let account = self.vault.get(steam_id)?;
         let time = now_seconds();

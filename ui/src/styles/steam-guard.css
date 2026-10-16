@@ -33,6 +33,10 @@
   line-height: 1.5;
 }
 
+.steamguard-note code {
+  color: var(--text-strong);
+}
+
 .steamguard-row {
   display: flex;
   align-items: center;

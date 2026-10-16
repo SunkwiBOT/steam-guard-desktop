@@ -58,7 +58,6 @@ pub struct SnapshotDto {
     pub settings: SettingsDto,
     pub folders: Vec<FolderDto>,
     pub masked: bool,
-    pub steam_ids_visible: bool,
 }
 
 #[derive(Serialize)]

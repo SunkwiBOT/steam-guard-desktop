@@ -131,7 +131,6 @@ export type SnapshotType = {
   settings: SettingsType;
   folders: FolderType[];
   masked: boolean;
-  steam_ids_visible: boolean;
 };
 
 export type UpdateInfoType = {

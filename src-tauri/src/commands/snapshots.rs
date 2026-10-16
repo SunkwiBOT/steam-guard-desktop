@@ -101,8 +101,8 @@ fn account_dto(
     let display_name = [persona_name.as_str(), account_name.as_str()]
         .into_iter()
         .find(|name| !name.trim().is_empty())
-        .unwrap_or(steam_id.as_str())
-        .to_string();
+        .map(str::to_string)
+        .unwrap_or_else(|| fallback_name(&steam_id, settings.show_steam_ids));
     AccountDto {
         initial: initial(&display_name),
         avatar: profile
@@ -117,6 +117,15 @@ fn account_dto(
         display_name,
         has_tokens,
         pending,
+    }
+}
+
+/// ! Hidden Steam IDs are masked completely, like the dialog does.
+fn fallback_name(steam_id: &str, show_steam_ids: bool) -> String {
+    if show_steam_ids {
+        steam_id.to_string()
+    } else {
+        "******".to_string()
     }
 }
 
@@ -178,7 +187,6 @@ pub(crate) fn build_snapshot(state: &AppState) -> SnapshotDto {
         },
         folders,
         masked,
-        steam_ids_visible: settings.show_steam_ids,
     }
 }
 

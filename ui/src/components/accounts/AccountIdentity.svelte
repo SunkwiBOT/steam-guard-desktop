@@ -12,7 +12,8 @@
   type AccountIdentityPropsType = { entry: AccountType };
 
   let { entry }: AccountIdentityPropsType = $props();
-  const hiddenGlobally = $derived(app.snapshot?.masked !== false);
+  //! A pending link may lack a cached name: ask the backend as if it were masked.
+  const needsFetch = $derived(app.snapshot?.masked !== false || !entry.account_name);
   const selectedId = $derived(entry.steam_id);
   let visible = $state(false);
   let revealed = $state("");
@@ -22,19 +23,19 @@
 
   //! Follows the privacy setting again whenever the account or the setting changes.
   $effect(() => {
-    const key = `${selectedId}:${hiddenGlobally}`;
+    const key = `${selectedId}:${needsFetch}`;
     untrack(() => {
       if (key === previousKey) return;
       previousKey = key;
       generation += 1;
-      visible = !hiddenGlobally;
+      visible = !needsFetch;
       revealed = "";
       busy = false;
     });
   });
 
   const read = (): Promise<string> =>
-    hiddenGlobally
+    needsFetch
       ? invoke("account_login_name", { steamId: entry.steam_id })
       : Promise.resolve(entry.account_name);
 
@@ -48,7 +49,7 @@
     const current = generation;
     busy = true;
     try {
-      if (hiddenGlobally) {
+      if (needsFetch) {
         const value = await read();
         if (current !== generation) return;
         revealed = value;

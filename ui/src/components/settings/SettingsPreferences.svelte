@@ -217,16 +217,17 @@
     />
     <p class="settings-note">{t.settings_privacy_description()}</p>
     <SettingToggle
-      label={t.settings_privacy_hide_ids()}
-      checked={settings.show_steam_ids !== true}
-      onchange={(enabled) => run("set_steam_ids_visible", { visible: !enabled })}
-    />
-    <SettingToggle
       label={t.settings_privacy_blur_codes()}
       checked={settings.blur_codes === true}
       onchange={(enabled) => run("set_blur_codes", { enabled })}
     />
     <p class="settings-note">{t.settings_privacy_blur_description()}</p>
+    <SettingToggle
+      label={t.settings_privacy_hide_ids()}
+      checked={settings.show_steam_ids !== true}
+      onchange={(enabled) => run("set_steam_ids_visible", { visible: !enabled })}
+    />
+    <p class="settings-note">{t.settings_privacy_ids_description()}</p>
   </section>
   <section class="settings-card">
     <h3 class="settings-card-title"><Download size={15} /> {t.updates_schedule_label()}</h3>

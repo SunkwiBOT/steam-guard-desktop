@@ -11,7 +11,7 @@
 
   let { steamId }: SteamIdentifiersPropsType = $props();
   const rows = $derived(steamIdentifiers(steamId));
-  const globallyVisible = $derived(app.snapshot?.steam_ids_visible === true);
+  const globallyVisible = $derived(app.snapshot?.settings.show_steam_ids === true);
   let visible = $state(false);
   let previousId = "";
   let previousGlobal: boolean | undefined;
@@ -27,6 +27,7 @@
   });
 
   let element = $state<HTMLDetailsElement | null>(null);
+  let open = $state(false);
   let popup = $state<HTMLDivElement | null>(null);
   const position = (): void => {
     if (!element?.open || !popup) return;
@@ -44,9 +45,10 @@
     popup.style.top = `${top}px`;
     popup.style.maxHeight = `${height}px`;
   };
+  // Global listeners only live while the menu is open.
   $effect(() => {
     const details = element;
-    if (!details) return;
+    if (!details || !open) return;
     const outside = (event: PointerEvent) => {
       if (event.target instanceof Node && !details.contains(event.target)) details.open = false;
     };
@@ -71,7 +73,14 @@
 </script>
 
 {#if rows.length}
-  <details class="account-identifiers" bind:this={element} ontoggle={position}>
+  <details
+    class="account-identifiers"
+    bind:this={element}
+    ontoggle={() => {
+      open = element?.open === true;
+      position();
+    }}
+  >
     <summary><Fingerprint size={15} /> {t.steam_ids_title()} <ChevronDown size={15} /></summary>
     <div class="identifiers-popover" bind:this={popup}>
       <div class="identifiers-toolbar">
