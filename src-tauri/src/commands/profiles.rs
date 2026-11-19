@@ -1,6 +1,3 @@
-//! Public community profiles (persona name and avatar) cached next to the
-//! vault so the cards can show them while it is locked.
-
 use guard_core::error_code::ErrorCode;
 use tauri::{AppHandle, Emitter, Manager, State};
 
@@ -19,8 +16,6 @@ fn fetch_and_store(state: &AppState, steam_id: &str) -> Result<(), String> {
         .map_err(|error| error.to_string())
 }
 
-/// Fetches one profile off the main thread and tells the interface and the
-/// tray when it is stored; a failure is only logged as a category.
 pub(crate) fn fetch_in_background(app: &AppHandle, steam_id: String) {
     let app = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
@@ -39,8 +34,6 @@ pub(crate) fn fetch_in_background(app: &AppHandle, steam_id: String) {
     });
 }
 
-/// After a backup import the imported ids are not reported: every stored
-/// account without a cached profile is fetched.
 pub(crate) fn fetch_missing_in_background(app: &AppHandle) {
     let state = app.state::<AppState>();
     let ids: Vec<String> = {

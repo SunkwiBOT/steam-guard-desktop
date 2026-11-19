@@ -3,6 +3,7 @@
 
   import { openRepository } from "../../lib/actions/actions.svelte";
   import { app, vault } from "../../lib/state/state.svelte";
+  import { layout } from "../../lib/state/layout.svelte";
   import { createLockCountdown } from "../../lib/vault/lock-countdown.svelte";
   import { AlertTriangle, Lock, LockOpen, ShieldOff } from "@lucide/svelte";
 
@@ -22,7 +23,7 @@
   );
 </script>
 
-<footer class="footer">
+<footer class="footer" bind:offsetHeight={layout.footerHeight}>
   <button
     class="version"
     type="button"

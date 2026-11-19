@@ -4,15 +4,15 @@ import type {
   LoginPurpose,
   SteamGuardField,
 } from "./steam-guard.constants";
-import type { LinkStartType, LoginBeginType } from "../types";
+import type { LinkStart } from "../bindings/LinkStart";
+import type { LoginBegin } from "../bindings/LoginBegin";
+import type { MessageType } from "../i18n/messages";
 
-/** The part of a controller the sign-in and link screens render: shared by
- *  the account dialog and the add-account dialog. */
 export type GuardFlowType = {
   readonly busy: boolean;
   readonly busyAction: GuardBusyActionType;
   readonly waiting: boolean;
-  readonly loginBegin: LoginBeginType | null;
+  readonly loginBegin: LoginBegin | null;
   readonly selectedGuard: GuardKind | null;
   readonly guardNeedsCode: boolean;
   readonly loginPurpose: LoginPurpose;
@@ -20,13 +20,12 @@ export type GuardFlowType = {
   accountName: string;
   password: string;
   loginCode: string;
-  readonly link: LinkStartType | null;
+  readonly link: LinkStart | null;
   linkCode: string;
   readonly transferStarted: boolean;
   revocationInput: string;
-  /** Account whose saved authenticator can supply the device code, if any. */
   readonly localCodeSteamId: string | null;
-  errorFor: (field: SteamGuardField) => string;
+  errorFor: (field: SteamGuardField) => MessageType;
   startPassword: () => Promise<void>;
   startQr: () => Promise<void>;
   needsExternalConfirmation: () => boolean;
@@ -35,6 +34,6 @@ export type GuardFlowType = {
   finalizeLink: () => Promise<void>;
   startTransfer: () => Promise<void>;
   finishTransfer: () => Promise<void>;
-  revokeDuringLink: () => Promise<void>;
+  revokeDuringLink: () => void;
   cancelLink: () => Promise<void>;
 };

@@ -1,12 +1,10 @@
-use guard_core::authenticator::{AuthError, Authenticator, StoredAuthenticator, VaultStatus};
+use guard_core::authenticator::{AuthError, Authenticator};
 use guard_core::error_code::ErrorCode;
 use tauri::{AppHandle, State};
 
 use crate::commands::{build_snapshot, SnapshotDto};
 use crate::state::{lock_authenticator, AppState};
 
-/// Snapshot after a change to the vault or its accounts: logs the new vault
-/// state and rebuilds the tray, which shows the same list.
 pub(super) fn vault_snapshot(app: &AppHandle, state: &AppState) -> SnapshotDto {
     let snapshot = build_snapshot(state);
     let vault = &snapshot.vault;
@@ -16,20 +14,6 @@ pub(super) fn vault_snapshot(app: &AppHandle, state: &AppState) -> SnapshotDto {
     ));
     crate::tray::refresh_menu(app);
     snapshot
-}
-
-#[tauri::command(async)]
-pub fn authenticator_status(state: State<'_, AppState>) -> VaultStatus {
-    let authenticator = state.authenticator();
-    let guard = lock_authenticator(&authenticator);
-    guard.status()
-}
-
-#[tauri::command(async)]
-pub fn authenticator_accounts(state: State<'_, AppState>) -> Vec<StoredAuthenticator> {
-    let authenticator = state.authenticator();
-    let guard = lock_authenticator(&authenticator);
-    guard.accounts()
 }
 
 async fn update_vault(

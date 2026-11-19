@@ -21,7 +21,9 @@
 </script>
 
 {#if !empty}
-  <div class="cards">
+  <div
+    class="grid grid-cols-[repeat(auto-fill,minmax(168px,1fr))] auto-rows-fr items-start gap-2.5 pb-2"
+  >
     {#each folders as folder (folder.id)}
       <FolderCard {folder} />
     {/each}
@@ -29,12 +31,18 @@
     {#if insideFolder}
       <button
         type="button"
-        class="card back-card"
+        class="card back-card group relative flex h-full min-h-[168px] flex-col items-center justify-center gap-1.5 overflow-hidden rounded-md border border-[var(--border)] bg-[var(--base-alt)] px-2.5 pt-2.5 pb-2 text-center text-inherit transition-[transform,border-color,background-color] duration-[120ms] ease-out hover:z-[2] hover:border-[var(--border-strong)] hover:bg-[var(--surface-hover)] focus-visible:shadow-[inset_0_0_0_2px_var(--accent)] focus-visible:outline-none"
         title={t.folder_leave()}
         onclick={() => (app.folderId = null)}
       >
-        <span class="folder-icon" aria-hidden="true"><ArrowLeft size={24} /></span>
-        <span class="card-name">{t.common_back()}</span>
+        <span
+          class="mt-1 flex size-[62px] shrink-0 items-center justify-center rounded-full bg-[var(--avatar)] text-[var(--text)]"
+          aria-hidden="true"><ArrowLeft size={24} /></span
+        >
+        <span
+          class="w-full overflow-hidden text-ellipsis whitespace-nowrap text-center font-semibold text-[var(--text-strong)]"
+          >{t.common_back()}</span
+        >
       </button>
     {/if}
 

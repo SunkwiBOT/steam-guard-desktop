@@ -32,43 +32,33 @@
   gap: 8px;
 }
 
-.account-identifiers {
-  position: relative;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--base);
-}
-
-.account-identifiers summary {
+.account-identifiers-trigger {
   display: flex;
   align-items: center;
   gap: 7px;
   min-height: 54px;
+  width: 100%;
   padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--base);
   color: var(--muted);
   cursor: pointer;
-  list-style: none;
+  font: inherit;
+  text-align: left;
 }
 
-.account-identifiers summary::-webkit-details-marker {
-  display: none;
-}
-
-.account-identifiers summary > svg:last-child {
+.account-identifiers-trigger svg:last-child {
   margin-left: auto;
+  transition: transform 150ms;
 }
 
-.account-identifiers[open] summary > svg:last-child {
-  transform: rotate(180deg);
-}
-
-.account-identifiers summary:focus-visible {
+.account-identifiers-trigger:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
 
 .identifiers-popover {
-  position: fixed;
   z-index: 5;
   width: min(580px, 82vw);
   max-height: min(370px, 55vh);
@@ -192,10 +182,6 @@
   flex-shrink: 0;
 }
 
-.setting-control .switch[hidden] {
-  display: none;
-}
-
 .copy-button {
   display: inline-flex;
   align-items: center;
@@ -207,7 +193,7 @@
   border: 1px solid transparent;
   border-radius: 3px;
   color: var(--muted);
-  cursor: pointer;
+  cursor: copy;
 }
 
 .copy-button:hover:not(:disabled) {
@@ -223,7 +209,11 @@
 
 .copy-button:disabled {
   opacity: 0.45;
-  cursor: default;
+  cursor: not-allowed;
+}
+
+.copy-button:disabled[aria-busy="true"] {
+  cursor: progress;
 }
 
 .account-caption {

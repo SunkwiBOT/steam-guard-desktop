@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use guard_core::authenticator::{
     confirmation_action, confirmations, remove_authenticator, AuthError, CodeInfo, ConfirmationItem,
 };
@@ -41,7 +39,6 @@ pub fn account_login_name(state: State<'_, AppState>, steam_id: String) -> Resul
             let guard = lock_authenticator(&authenticator);
             guard.account_name(&steam_id)
         };
-        // A pending link may only know the name typed at sign-in.
         match stored {
             Ok(name) if !name.is_empty() => Ok(name),
             Ok(_) | Err(AuthError::Missing) => state
@@ -52,29 +49,28 @@ pub fn account_login_name(state: State<'_, AppState>, steam_id: String) -> Resul
     })
 }
 
-/// The Steam ID comes from the file itself.
+// ! The path comes from the state set by `steam_guard_pick_file`, never from the page.
 #[tauri::command]
 pub async fn steam_guard_import(
     app: AppHandle,
     state: State<'_, AppState>,
-    path: String,
     passkey: Option<String>,
 ) -> Result<SnapshotDto, String> {
     let passkey = passkey.map(zeroize::Zeroizing::new);
+    let path = state
+        .picked_mafile()
+        .ok_or_else(|| ErrorCode::IoError.to_string())?;
     crate::logging::run_async("steam_guard_import", async {
         let authenticator = state.authenticator();
         let stored = tauri::async_runtime::spawn_blocking(move || {
             let mut guard = lock_authenticator(&authenticator);
             guard
-                .import(
-                    Path::new(&path),
-                    passkey.as_deref().map(|value| value.as_str()),
-                    None,
-                )
+                .import(&path, passkey.as_deref().map(|value| value.as_str()), None)
                 .map_err(|error| error.to_string())
         })
         .await
         .map_err(|_| ErrorCode::WorkerFailed.to_string())??;
+        state.clear_picked_mafile();
         crate::commands::profiles::fetch_in_background(&app, stored.steam_id);
         Ok(vault_snapshot(&app, &state))
     })
@@ -120,8 +116,7 @@ pub async fn steam_guard_confirmation_action(
                 .map_err(|error| error.to_string())?;
             confirmation_action(&mut account, &id, &nonce, accept)
                 .map_err(|error| error.to_string())?;
-            // An accepted action must not be reported as failed just because
-            // saving refreshed tokens failed afterwards.
+            // ! An accepted action must not be reported as failed because saving refreshed tokens failed afterwards.
             if let Err(error) = lock_authenticator(&authenticator).remember_tokens(&account) {
                 crate::logging::write(&format!(
                     "action=steam_guard_confirmation_action stage=save_session status=failed error={}",
@@ -136,7 +131,6 @@ pub async fn steam_guard_confirmation_action(
     .await
 }
 
-/// Revokes the authenticator on Steam, then forgets it locally.
 #[tauri::command]
 pub async fn steam_guard_remove(
     app: AppHandle,
@@ -167,19 +161,14 @@ pub async fn steam_guard_remove(
     .await
 }
 
-/// Local only: the authenticator stays active on Steam, so the interface must
-/// have shown the warning first.
+// ! Local only: the authenticator stays active on Steam.
 #[tauri::command]
 pub async fn steam_guard_forget(
     app: AppHandle,
     state: State<'_, AppState>,
     steam_id: String,
-    confirmed: bool,
 ) -> Result<SnapshotDto, String> {
     crate::logging::run_async("steam_guard_forget", async {
-        if !confirmed {
-            return Err(ErrorCode::ConfirmationRequired.to_string());
-        }
         let authenticator = state.authenticator();
         let id = steam_id.clone();
         tauri::async_runtime::spawn_blocking(move || {
@@ -196,7 +185,6 @@ pub async fn steam_guard_forget(
     .await
 }
 
-/// The cached profile is only presentation: a failure to drop it is logged, never reported.
 fn forget_profile(state: &AppState, steam_id: &str) {
     let removed = steam_id
         .parse::<u64>()

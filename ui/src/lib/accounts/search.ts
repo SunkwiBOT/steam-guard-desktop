@@ -1,12 +1,7 @@
 import { SearchScope } from "../state/state.constants";
-import type { AccountType } from "../types";
+import type { AccountDto } from "../bindings/AccountDto";
 
-/**
- * Matches an account against an already lowercased needle. `display_name` only
- * looks at the names shown on the card, `identifier` only at the Steam login and
- * the Steam ID, and `both` at all of them.
- */
-export const matchesSearch = (entry: AccountType, needle: string, scope: SearchScope): boolean => {
+export const matchesSearch = (entry: AccountDto, needle: string, scope: SearchScope): boolean => {
   const names =
     entry.display_name.toLowerCase().includes(needle) ||
     entry.persona_name.toLowerCase().includes(needle);
@@ -17,22 +12,15 @@ export const matchesSearch = (entry: AccountType, needle: string, scope: SearchS
 };
 
 export type AccountFilterType = {
-  /** Open folder, `null` at the root. */
   folderId: string | null;
-  /** Raw search text; trimmed and lowercased here. */
   search: string;
   scope: SearchScope;
 };
 
-/**
- * Accounts shown in the grid. A folder always scopes the list, with or
- * without a search term; at the root a search looks through every folder
- * while an empty search only lists the accounts outside folders.
- */
 export const filterAccounts = (
-  accounts: readonly AccountType[],
+  accounts: readonly AccountDto[],
   { folderId, search, scope }: AccountFilterType,
-): AccountType[] => {
+): AccountDto[] => {
   const needle = search.trim().toLowerCase();
   return accounts
     .filter((entry) => {

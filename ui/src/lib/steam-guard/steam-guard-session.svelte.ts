@@ -1,4 +1,5 @@
-import { ErrorApiMessage } from "../errors/errors.constants";
+import type { UiErrorCode } from "../errors/errors.constants";
+import type { MessageType } from "../i18n/messages";
 import { errorMessage, resolveErrorCode } from "../errors/errors.svelte";
 import { GuardAction, SteamGuardScreen, SteamGuardField } from "./steam-guard.constants";
 import type { GuardBusyActionType } from "./steam-guard.constants";
@@ -13,10 +14,9 @@ export const createGuardSession = (deps: GuardSessionDepsType) => {
   let screen = $state<SteamGuardScreen>(SteamGuardScreen.HOME);
   let busy = $state(false);
   let busyAction = $state<GuardBusyActionType>(GuardAction.IDLE);
-  let error = $state<ErrorApiMessage | "">("");
+  let error = $state<UiErrorCode | "">("");
   let errorField = $state(SteamGuardField.GENERAL);
 
-  //! Bumped on every reset and cancel so responses from a closed or restarted session are dropped.
   let generation = 0;
 
   const invalidate = (): void => {
@@ -43,9 +43,9 @@ export const createGuardSession = (deps: GuardSessionDepsType) => {
     try {
       const result = await action();
       return current === generation ? result : null;
-    } catch (cause) {
+    } catch (e: unknown) {
       if (current === generation) {
-        error = resolveErrorCode(cause);
+        error = resolveErrorCode(e);
         errorField = fieldForGuardAction(name, error, deps.needsCode());
       }
       return null;
@@ -67,7 +67,7 @@ export const createGuardSession = (deps: GuardSessionDepsType) => {
     }, name);
   };
 
-  const fail = (code: ErrorApiMessage, field: SteamGuardField): void => {
+  const fail = (code: UiErrorCode, field: SteamGuardField): void => {
     error = code;
     errorField = field;
   };
@@ -80,7 +80,7 @@ export const createGuardSession = (deps: GuardSessionDepsType) => {
     if (errorField === field) error = "";
   };
 
-  const errorFor = (field: SteamGuardField): string =>
+  const errorFor = (field: SteamGuardField): MessageType =>
     errorField === field && error ? errorMessage(error) : "";
 
   const applyResult = (result: unknown): void => {

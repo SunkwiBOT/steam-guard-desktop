@@ -1,17 +1,18 @@
-import { ErrorApiMessage } from "../errors/errors.constants";
+import { UiErrorCode } from "../errors/errors.constants";
 import { t, rich } from "../i18n/i18n.svelte";
 import { GuardAction, SteamGuardScreen, SteamGuardField } from "./steam-guard.constants";
 import type { GuardSessionType } from "./steam-guard-session.svelte";
 import { askConfirm } from "../state/dialogs.svelte";
-import { accountById, showToast } from "../state/state.svelte";
+import { accountById } from "../state/state.svelte";
+import { ToastKind } from "../state/state.constants";
+import { toast } from "../state/toasts";
 import { invoke } from "../api/tauri";
-import type { LinkStartType, SnapshotType } from "../types";
+import type { LinkStart } from "../bindings/LinkStart";
+import type { SnapshotDto } from "../bindings/SnapshotDto";
 
 export type LinkDepsType = {
   session: GuardSessionType;
-  /** Runs once the authenticator is saved (link finalized or transferred). */
-  onLinked: (steamId: string, snapshot: SnapshotType) => void;
-  /** Runs after the previous authenticator was revoked during a link. */
+  onLinked: (steamId: string, snapshot: SnapshotDto) => void;
   onRevoked: () => void;
   onCancelled: () => void;
 };
@@ -19,12 +20,12 @@ export type LinkDepsType = {
 export const createLinkController = (deps: LinkDepsType) => {
   const { session } = deps;
 
-  let link = $state<LinkStartType | null>(null);
+  let link = $state<LinkStart | null>(null);
   let linkCode = $state("");
   let transferStarted = $state(false);
   let revocationInput = $state("");
 
-  const displayName = (current: LinkStartType): string =>
+  const displayName = (current: LinkStart): string =>
     accountById(current.steam_id)?.display_name || current.account_name || current.steam_id;
 
   const reset = (): void => {
@@ -65,7 +66,7 @@ export const createLinkController = (deps: LinkDepsType) => {
       session.applyResult(result);
       link = null;
       session.setScreen(SteamGuardScreen.HOME);
-      showToast(t.guard_link_success(), true, accountById(current.steam_id));
+      toast(ToastKind.SUCCESS, t.guard_link_success(), { account: accountById(current.steam_id) });
       deps.onLinked(current.steam_id, result);
     }
   };
@@ -101,39 +102,45 @@ export const createLinkController = (deps: LinkDepsType) => {
       session.applyResult(result);
       link = null;
       session.setScreen(SteamGuardScreen.HOME);
-      showToast(t.guard_transfer_success(), true, accountById(current.steam_id));
+      toast(ToastKind.SUCCESS, t.guard_transfer_success(), {
+        account: accountById(current.steam_id),
+      });
       deps.onLinked(current.steam_id, result);
     }
   };
 
-  const revokeDuringLink = async (): Promise<void> => {
+  const revokeDuringLink = (): void => {
     const current = link;
     if (!current || !revocationInput) {
-      session.fail(ErrorApiMessage.REVOCATION_CODE_REQUIRED, SteamGuardField.REVOCATION);
+      session.fail(UiErrorCode.REVOCATION_CODE_REQUIRED, SteamGuardField.REVOCATION);
       return;
     }
-    const answer = await askConfirm({
+    const revocationCode = revocationInput;
+    askConfirm({
       title: t.guard_revoke_title(),
       steamId: current.steam_id,
       text: rich(t.guard_revoke_description, { account: displayName(current) }),
       confirmLabel: t.guard_revoke_confirm_action(),
       danger: true,
+      action: async () => {
+        const done = await session.guardVoid(
+          () =>
+            invoke("steam_guard_link_revoke", {
+              sessionId: current.session_id,
+              revocationCode,
+            }),
+          GuardAction.REVOKE,
+        );
+        if (done === null) return false;
+        link = null;
+        session.setScreen(SteamGuardScreen.HOME);
+        toast(ToastKind.SUCCESS, t.guard_revoke_success(), {
+          account: accountById(current.steam_id),
+        });
+        deps.onRevoked();
+        return true;
+      },
     });
-    if (!answer) return;
-    const done = await session.guardVoid(
-      () =>
-        invoke("steam_guard_link_revoke", {
-          sessionId: current.session_id,
-          revocationCode: revocationInput,
-        }),
-      GuardAction.REVOKE,
-    );
-    if (done !== null) {
-      link = null;
-      session.setScreen(SteamGuardScreen.HOME);
-      showToast(t.guard_revoke_success(), true, accountById(current.steam_id));
-      deps.onRevoked();
-    }
   };
 
   const cancelLink = async (): Promise<void> => {

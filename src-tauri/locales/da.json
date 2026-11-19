@@ -8,5 +8,8 @@
   "tray_locked": "Boks låst",
   "tray_no_accounts": "Ingen konti",
   "tray_open": "Åbn",
-  "tray_quit": "Afslut"
+  "tray_quit": "Afslut",
+  "exit_blocked_link_in_flight": "Steam Guard Desktop kan ikke lukke, mens en Steam-tilknytning er i gang. Fuldfør eller annuller den først.",
+  "database_open_failed_body": "Programmets database kunne ikke åbnes (%{code}).\n\nPlacering: %{path}\n\nFilen blev efterladt uændret. Løs problemet (diskplads, rettigheder eller kør den tilsvarende app-version) og genstart.",
+  "database_recovered_notice": "Ved opstart blev der fundet en beskadiget databasefil, som blev flyttet til side som \"%{backup}\". Der blev oprettet en ny, tom database; tilføj dine konti igen, eller prøv at gendanne den gamle fil manuelt."
 }

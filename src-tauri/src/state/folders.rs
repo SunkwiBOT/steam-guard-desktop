@@ -62,8 +62,6 @@ impl AppState {
         })
     }
 
-    /// Folder and colour of an account that is no longer listed. Presentation
-    /// only, so a failed write is logged rather than reported.
     pub fn forget_account(&self, steam_id: &str) {
         if let Err(error) = self.update_settings(|settings| settings.forget_account(steam_id)) {
             crate::logging::write(&format!(
@@ -73,8 +71,7 @@ impl AppState {
         }
     }
 
-    /// The existence check and the change run under the same lock, so a
-    /// concurrent delete cannot slip in between.
+    // ! The existence check and the change run under the same lock, so a concurrent delete cannot slip in between.
     fn update_known_folder(
         &self,
         id: &str,

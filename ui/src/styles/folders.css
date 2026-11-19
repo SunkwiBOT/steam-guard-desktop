@@ -1,75 +1,3 @@
-.card-accent {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background: var(--card-accent, transparent);
-}
-
-.card-folder {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border: 1px solid var(--border-strong);
-  border-radius: 50%;
-  background: var(--panel);
-  color: var(--accent);
-}
-
-.card-folder svg {
-  width: 14px;
-  height: 14px;
-}
-
-/* The pending badge shares the corner with the folder bubble. */
-.card.has-folder .card-badge {
-  left: 36px;
-}
-
-.folder-card {
-  justify-content: flex-start;
-}
-
-.back-card {
-  justify-content: center;
-}
-
-.folder-card .folder-icon,
-.back-card .folder-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 62px;
-  height: 62px;
-  flex-shrink: 0;
-  margin-top: 4px;
-  border-radius: 50%;
-  background: var(--avatar);
-  color: var(--accent);
-}
-
-.back-card .folder-icon {
-  color: var(--text);
-}
-
-.folder-card .card-meta {
-  justify-content: center;
-  margin-top: auto;
-  color: var(--muted);
-}
-
-.folder-card .card-name {
-  white-space: normal;
-  text-overflow: clip;
-  overflow-wrap: anywhere;
-}
-
 .breadcrumb {
   flex: 0 0 auto;
   display: flex;
@@ -156,10 +84,16 @@
   line-height: 1;
 }
 
+.color-swatch:focus-visible,
+.icon-choice:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .color-swatch:disabled,
 .icon-choice:disabled {
   opacity: 0.45;
-  cursor: default;
+  cursor: not-allowed;
 }
 
 .icon-choice {
@@ -222,10 +156,6 @@
   display: inline;
 }
 
-.folder-heading .folder-caption {
-  margin-top: 0;
-}
-
 .account-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -243,22 +173,8 @@
   min-width: 0;
 }
 
-/* Folder editor: a native dialog sharing the look of the div-based ones. */
-.folder-editor::backdrop {
-  background: var(--backdrop);
-}
-
 .dialog.folder-editor {
-  position: fixed;
-  inset: 0;
   width: min(680px, 94vw);
-  height: fit-content;
-  margin: auto;
-  color: var(--text);
-}
-
-.folder-editor:not([open]) {
-  display: none;
 }
 
 .folder-editor-name {
@@ -288,7 +204,6 @@
 .settings-list {
   display: flex;
   flex-direction: column;
-  /* ! Flex children would otherwise shrink to nothing inside the dialog. */
   flex: 0 0 auto;
   gap: 4px;
   max-height: 190px;
@@ -347,14 +262,6 @@
 
 .settings-add .input {
   flex: 1 1 auto;
-  min-width: 0;
-}
-
-.menu-folder-picker {
-  margin: 4px 8px;
-}
-
-.menu-folder-picker .select-button {
   min-width: 0;
 }
 

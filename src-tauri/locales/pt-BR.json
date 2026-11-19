@@ -8,5 +8,8 @@
   "tray_locked": "Cofre bloqueado",
   "tray_no_accounts": "Nenhuma conta",
   "tray_open": "Abrir",
-  "tray_quit": "Sair"
+  "tray_quit": "Sair",
+  "exit_blocked_link_in_flight": "O Steam Guard Desktop não pode fechar enquanto uma vinculação Steam está em andamento. Termine-a ou cancele-a primeiro.",
+  "database_open_failed_body": "Não foi possível abrir o banco de dados do aplicativo (%{code}).\n\nLocal: %{path}\n\nO arquivo foi deixado intacto. Resolva o problema (espaço em disco, permissões ou execute a versão correspondente do app) e reinicie.",
+  "database_recovered_notice": "Um arquivo de banco de dados corrompido foi encontrado na inicialização e movido para \"%{backup}\". Um novo banco de dados vazio foi criado; adicione suas contas novamente, ou tente recuperar o arquivo antigo manualmente."
 }

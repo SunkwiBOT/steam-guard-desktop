@@ -1,13 +1,15 @@
 import { errorMessage } from "../errors/errors.svelte";
 import { t, rich, locale } from "../i18n/i18n.svelte";
 import { ConfirmKind } from "../state/dialogs.constants";
-import { UpdateCheck, UpdateInterval, UpdateStage } from "../state/state.constants";
+import { UpdateCheck, UpdateStage, UpdateInterval, ToastKind } from "../state/state.constants";
 import { BackupMode } from "../vault/backup.constants";
+import { UrlDestination } from "../bindings/UrlDestination";
 import { updateCheckDue } from "../updates/update-policy";
 
 import { randomFolderStyle } from "../folders/folder-style";
 import { copyValue } from "../state/clipboard.svelte";
 import { askConfirm, askFolderName, confirmDialog, folderDialog } from "../state/dialogs.svelte";
+import { toast } from "../state/toasts";
 import {
   accountById,
   app,
@@ -15,25 +17,20 @@ import {
   folders,
   openAccount,
   run,
-  showToast,
   vault,
 } from "../state/state.svelte";
-import { invoke, invokePlugin } from "../api/tauri";
+import { invoke } from "../api/tauri";
 
-const FALLBACK_REPOSITORY_URL = "https://github.com/SunkwiBOT/steam-guard-desktop";
-
-export const repositoryUrl = (): string => app.info.repository || FALLBACK_REPOSITORY_URL;
+export const repositoryUrl = (): string => app.info.repository;
 
 export const openRepository = async (): Promise<void> => {
-  const url = repositoryUrl();
   try {
-    await invokePlugin("plugin:opener|open_url", { url, with: null });
-  } catch (error) {
-    showToast(errorMessage(error));
+    await invoke("open_url", { destination: UrlDestination.PROJECT_PAGE });
+  } catch (e: unknown) {
+    toast(ToastKind.ERROR, t.action_failed_title(), { description: errorMessage(e) });
   }
 };
 
-/** Fetch a fresh code at click time, rather than copying a stale display. */
 export const copySteamGuardCode = async (steamId: string): Promise<boolean> => {
   if (app.busy.active) return false;
   const entry = accountById(steamId);
@@ -45,17 +42,20 @@ export const copySteamGuardCode = async (steamId: string): Promise<boolean> => {
   try {
     const { code } = await invoke("steam_guard_code", { steamId });
     return await copyValue(code, `guard:${steamId}`, t.guard_code_label(), entry);
-  } catch (cause) {
-    showToast(errorMessage(cause), false, entry);
+  } catch (e: unknown) {
+    toast(ToastKind.ERROR, t.action_failed_title(), {
+      description: errorMessage(e),
+      account: entry,
+    });
     return false;
   }
 };
 
-export const forgetAccount = async (steamId: string): Promise<boolean> => {
-  if (app.busy.active || confirmDialog.open) return false;
+export const forgetAccount = (steamId: string, onForgotten?: () => void): void => {
+  if (app.busy.active || confirmDialog.open) return;
   const entry = accountById(steamId);
-  if (!entry) return false;
-  const answer = await askConfirm({
+  if (!entry) return;
+  askConfirm({
     title: t.guard_forget_title(),
     kind: ConfirmKind.REMOVE,
     steamId,
@@ -64,18 +64,24 @@ export const forgetAccount = async (steamId: string): Promise<boolean> => {
     checkboxRequired: true,
     confirmLabel: t.guard_forget_action(),
     danger: true,
-  });
-  if (!answer?.checked) return false;
-  const result = await run(
-    "steam_guard_forget",
-    { steamId, confirmed: true },
-    {
-      busy: t.guard_forget_pending(),
-      success: rich(t.guard_forget_success, { account: entry.display_name }),
-      account: entry,
+    action: async (answer) => {
+      if (!answer.checked) return false;
+      const result = await run(
+        "steam_guard_forget",
+        { steamId },
+        {
+          success: {
+            title: t.account_forgotten_title(),
+            description: rich(t.guard_forget_success, { account: entry.display_name }),
+          },
+          account: entry,
+        },
+      );
+      if (result === null) return false;
+      onForgotten?.();
+      return true;
     },
-  );
-  return result !== null;
+  });
 };
 
 export const refreshProfile = async (steamId: string): Promise<boolean> => {
@@ -84,7 +90,7 @@ export const refreshProfile = async (steamId: string): Promise<boolean> => {
   const result = await run(
     "profile_refresh",
     { steamId },
-    { success: t.profile_refresh_success(), account: entry },
+    { success: { title: t.profile_refresh_success() }, account: entry },
   );
   return result !== null;
 };
@@ -93,7 +99,6 @@ export const exportAccount = (steamId: string): void => {
   app.backup = { mode: BackupMode.EXPORT, steamId };
 };
 
-/** Opens the account on its sign-in form; a pending link resumes from the home screen instead. */
 export const signInAgain = (steamId: string): void => {
   const entry = accountById(steamId);
   if (!entry) return;
@@ -107,7 +112,15 @@ export const moveToFolder = async (steamId: string, folderId: string | null): Pr
   const result = await run(
     "assign_folder",
     { steamId, folderId },
-    folder ? { success: rich(t.folder_move_success, { folder: folder.name }), account: entry } : {},
+    folder
+      ? {
+          success: {
+            title: t.folder_moved_title(),
+            description: rich(t.folder_move_success, { folder: folder.name }),
+          },
+          account: entry,
+        }
+      : {},
   );
   return result !== null;
 };
@@ -117,20 +130,20 @@ export const setAccountColor = async (steamId: string, color: string): Promise<b
   return result !== null;
 };
 
-/** Creates a folder with a random style; returns the new folder's id. */
 export const createFolder = async (name: string): Promise<string | null> => {
-  const style = randomFolderStyle();
-  //! The new id is the one that was not there before, never the first folder
-  //! sharing the name.
+  const style = randomFolderStyle(app.info.folder_icons);
   const known = new Set(folders().map((item) => item.id));
   const result = await run("create_folder", { name, color: style.color, icon: style.icon });
   if (!result) return null;
   const created = folders().find((item) => !known.has(item.id));
-  if (created) showToast(rich(t.folder_create_success, { folder: name }), true, null, created);
+  if (created)
+    toast(ToastKind.SUCCESS, t.folder_created_title(), {
+      description: rich(t.folder_create_success, { folder: name }),
+      folder: created,
+    });
   return created?.id ?? null;
 };
 
-/** Asks for a name, creates the folder and moves the account into it. */
 export const createFolderFor = async (steamId: string): Promise<void> => {
   if (app.busy.active || folderDialog.open) return;
   const name = await askFolderName();
@@ -139,32 +152,36 @@ export const createFolderFor = async (steamId: string): Promise<void> => {
   if (folderId) await moveToFolder(steamId, folderId);
 };
 
-export const deleteFolder = async (id: string): Promise<boolean> => {
+export const deleteFolder = (id: string): void => {
   const folder = folderById(id);
-  if (!folder || app.busy.active || confirmDialog.open) return false;
-  const answer = await askConfirm({
+  if (!folder || app.busy.active || confirmDialog.open) return;
+  askConfirm({
     title: t.folder_delete_title(),
     text: rich(t.folder_delete_confirm, { folder: folder.name }),
     confirmLabel: t.common_delete(),
     danger: true,
     kind: ConfirmKind.REMOVE,
+    action: async () => {
+      const result = await run("delete_folder", { id });
+      if (result === null) return false;
+      toast(ToastKind.SUCCESS, t.folder_deleted_title(), {
+        description: rich(t.folder_delete_success, { folder: folder.name }),
+        folder,
+      });
+      return true;
+    },
   });
-  if (!answer) return false;
-  const result = await run("delete_folder", { id });
-  if (result === null) return false;
-  showToast(rich(t.folder_delete_success, { folder: folder.name }), true, null, folder);
-  return true;
 };
 
 export const checkForUpdate = async (): Promise<void> => {
-  if (app.updateStage || app.updateCheck === UpdateCheck.CHECKING) {
+  if (app.updateStage !== UpdateStage.IDLE || app.updateCheck === UpdateCheck.CHECKING) {
     return;
   }
   app.updateCheck = UpdateCheck.CHECKING;
   try {
     app.update = await invoke("check_for_update");
     app.updateCheck = UpdateCheck.SUCCESS;
-  } catch {
+  } catch (e: unknown) {
     app.update = null;
     app.updateCheck = UpdateCheck.ERROR;
   } finally {
@@ -191,9 +208,7 @@ export const updateButtonLabel = (): string => {
 };
 
 export const downloadUpdate = async (): Promise<void> => {
-  if (app.updateStage) return;
-  // The progress dialog replaces the release notes; "Later" hides it and the
-  // header button brings it back.
+  if (app.updateStage !== UpdateStage.IDLE) return;
   app.updateDialog = true;
   app.updateStage = UpdateStage.DOWNLOADING;
   app.progress = { downloaded: 0, total: 0 };
@@ -203,7 +218,6 @@ export const downloadUpdate = async (): Promise<void> => {
     app.updateStage = UpdateStage.IDLE;
     return;
   }
-  // The download always takes the newest release, which can differ from the one checked earlier.
   if (app.update && app.update.version !== version) {
     app.update = { ...app.update, version };
   }
@@ -233,9 +247,9 @@ export const applyUpdate = async (): Promise<void> => {
   app.updateStage = UpdateStage.INSTALLING;
   try {
     await invoke("apply_update", { version: app.updateVersion });
-  } catch (cause) {
+  } catch (e: unknown) {
     app.updateStage = UpdateStage.DOWNLOADED;
-    showToast(errorMessage(cause));
+    toast(ToastKind.ERROR, t.action_failed_title(), { description: errorMessage(e) });
   }
 };
 

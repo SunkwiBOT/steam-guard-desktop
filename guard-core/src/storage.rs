@@ -3,15 +3,13 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, MutexGuard};
 
-use rusqlite::{Connection, Transaction, TransactionBehavior};
+use rusqlite::{Connection, OptionalExtension, Transaction, TransactionBehavior};
 
 use crate::error::{Result, SteamError};
 use crate::error_code::ErrorCode;
 
-/// ! Bumped whenever the table layout changes. An older database is upgraded
-/// ! in place by `UPGRADES`; one written by a newer build is refused, never
-/// ! replaced, because it may hold Steam Guard secrets that exist nowhere else.
-pub const SCHEMA_VERSION: i64 = 2;
+// ! Bumped when the table layout changes; a newer-than-current database is refused, never overwritten, since it may hold secrets nowhere else.
+pub const SCHEMA_VERSION: i64 = 5;
 
 const SCHEMA: &str = "
 CREATE TABLE setting (
@@ -51,13 +49,24 @@ CREATE TABLE account_color (
     steam_id TEXT PRIMARY KEY,
     color    TEXT NOT NULL
 ) STRICT;
+
+-- Write-ahead record for a link/finalize/transfer step: written before the
+-- Steam call, kept until the resulting account is durably saved in `vault`.
+-- `accepted` only turns on after Steam has confirmed the step; `open` uses it
+-- to tell an aborted attempt (unsafe to recover: Steam's answer is unknown)
+-- from one Steam already accepted (recoverable from this row alone).
+CREATE TABLE link_wal (
+    steam_id  TEXT PRIMARY KEY,
+    encrypted INTEGER NOT NULL,
+    nonce     TEXT,
+    body      TEXT NOT NULL,
+    accepted  INTEGER NOT NULL
+) STRICT;
 ";
 
-/// ! `UPGRADES[n - 1]` takes a database from version `n` to `n + 1`. Each step
-/// ! only adds: a 0.1.0 database may hold the only copy of an authenticator, so
-/// ! nothing is dropped or rewritten, and `IF NOT EXISTS` keeps a step
-/// ! re-runnable after an interrupted upgrade.
-const UPGRADES: [&str; 1] = ["
+// ! Each step only adds columns/tables so a 0.1.0 database is never dropped or rewritten, and is safely re-runnable after an interrupted upgrade.
+const UPGRADES: [&str; 4] = [
+    "
 CREATE TABLE IF NOT EXISTS folder (
     id       TEXT PRIMARY KEY,
     position INTEGER NOT NULL,
@@ -75,9 +84,46 @@ CREATE TABLE IF NOT EXISTS account_color (
     steam_id TEXT PRIMARY KEY,
     color    TEXT NOT NULL
 ) STRICT;
-"];
+",
+    // ! No table change: version 3 only turns `secure_delete` on. Reaching it
+    // through an upgrade means the file was written before that pragma
+    // existed, so its free pages may still hold plaintext secrets; `open`
+    // runs one `VACUUM` right after this step commits to rewrite them.
+    "",
+    "
+CREATE TABLE IF NOT EXISTS link_wal (
+    steam_id  TEXT PRIMARY KEY,
+    encrypted INTEGER NOT NULL,
+    nonce     TEXT,
+    body      TEXT NOT NULL,
+    accepted  INTEGER NOT NULL
+) STRICT;
+",
+    // ! Version 5: preference enums move from lower-case wire tokens to their Rust variant names (SCREAMING_SNAKE_CASE).
+    "
+UPDATE setting SET value = CASE value
+    WHEN '\"never\"' THEN '\"NEVER\"'
+    WHEN '\"startup\"' THEN '\"STARTUP\"'
+    WHEN '\"15m\"' THEN '\"FIFTEEN_MINUTES\"'
+    WHEN '\"30m\"' THEN '\"THIRTY_MINUTES\"'
+    WHEN '\"1h\"' THEN '\"ONE_HOUR\"'
+    WHEN '\"6h\"' THEN '\"SIX_HOURS\"'
+    WHEN '\"1d\"' THEN '\"ONE_DAY\"'
+    WHEN '\"1w\"' THEN '\"ONE_WEEK\"'
+    WHEN '\"display_name\"' THEN '\"DISPLAY_NAME\"'
+    WHEN '\"identifier\"' THEN '\"IDENTIFIER\"'
+    WHEN '\"both\"' THEN '\"BOTH\"'
+    WHEN '\"5m\"' THEN '\"FIVE_MINUTES\"'
+    WHEN '\"10m\"' THEN '\"TEN_MINUTES\"'
+    WHEN '\"20m\"' THEN '\"TWENTY_MINUTES\"'
+    WHEN '\"2h\"' THEN '\"TWO_HOURS\"'
+    WHEN '\"4h\"' THEN '\"FOUR_HOURS\"'
+    ELSE value
+END
+WHERE key IN ('update_interval', 'search_scope', 'vault_lock_interval');
+",
+];
 
-/// Cloning shares the same connection.
 #[derive(Clone)]
 pub struct Database {
     connection: Arc<Mutex<Connection>>,
@@ -93,23 +139,16 @@ impl std::fmt::Debug for Database {
     }
 }
 
-/// `moved_aside` is set when a corrupt file was found and kept next to the
-/// fresh database under a name that is never reused.
 pub struct Opened {
     pub database: Database,
     pub moved_aside: Option<PathBuf>,
 }
 
-/// ! Only corruption justifies moving the file aside: a locked file, a
-/// ! permission error or a schema from another version must leave the data
-/// ! (which may hold Steam Guard secrets) exactly where it is.
+// ! Only corruption justifies moving the file aside; a lock, permission error, or version mismatch must leave data holding secrets untouched.
 #[derive(Debug)]
 enum OpenFailure {
-    /// Not a SQLite file, or one that fails its integrity check.
     Corrupt(String),
-    /// Written by a build with a newer `SCHEMA_VERSION`.
     Version(i64),
-    /// Locked, unreadable, out of disk space, and so on.
     Other(rusqlite::Error),
 }
 
@@ -143,7 +182,7 @@ impl OpenFailure {
 impl Database {
     pub fn open(path: &Path) -> Result<Opened> {
         if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent)
+            crate::util::ensure_app_private_dir(parent)
                 .map_err(|error| SteamError::io("Create the application data folder", error))?;
         }
         match Self::connect(path) {
@@ -169,11 +208,9 @@ impl Database {
         let connection = Connection::open_in_memory().map_err(|error| {
             SteamError::io("Create the application database", error_as_io(&error))
         })?;
-        Ok(Self::wrap(
-            Self::prepare(connection)
-                .map_err(|error| error.into_error("Create the application database"))?,
-            PathBuf::from(":memory:"),
-        ))
+        let connection = Self::prepare(connection)
+            .map_err(|error| error.into_error("Create the application database"))?;
+        Ok(Self::wrap(connection, PathBuf::from(":memory:")))
     }
 
     pub fn transaction<T>(
@@ -182,7 +219,7 @@ impl Database {
         work: impl FnOnce(&Transaction<'_>) -> rusqlite::Result<T>,
     ) -> Result<T> {
         let mut connection = self.lock();
-        // Taking the write lock up front avoids a failed upgrade when a save reads before it writes.
+        // ! Takes the write lock immediately to avoid SQLite's failed lock upgrade when a read happens before a write.
         let transaction = connection
             .transaction_with_behavior(TransactionBehavior::Immediate)
             .map_err(|error| SteamError::io(context, error_as_io(&error)))?;
@@ -201,6 +238,14 @@ impl Database {
     ) -> Result<T> {
         let connection = self.lock();
         work(&connection).map_err(|error| SteamError::io(context, error_as_io(&error)))
+    }
+
+    // ! Rewrites free pages so secrets freed by an earlier write can't be read back from the file; must not run inside a transaction.
+    pub fn vacuum(&self, context: &'static str) -> Result<()> {
+        let connection = self.lock();
+        connection
+            .execute_batch("VACUUM")
+            .map_err(|error| SteamError::io(context, error_as_io(&error)))
     }
 
     fn lock(&self) -> MutexGuard<'_, Connection> {
@@ -223,9 +268,17 @@ impl Database {
     fn connect(path: &Path) -> std::result::Result<Connection, OpenFailure> {
         let connection = Connection::open(path).map_err(OpenFailure::classify)?;
         restrict_permissions(path);
-        Self::prepare(connection)
+        let connection = Self::prepare(connection)?;
+        if vacuum_pending(&connection).map_err(OpenFailure::classify)? {
+            // ! VACUUM can't run inside a transaction, so it runs here once the upgrade step above has committed; a failure (e.g. low disk space) leaves the flag set for the next start to retry.
+            if connection.execute_batch("VACUUM").is_ok() {
+                clear_vacuum_pending(&connection).map_err(OpenFailure::classify)?;
+            }
+        }
+        Ok(connection)
     }
 
+    // ! Crossing the `secure_delete` boundary (version 3) sets a persisted flag so the pages it left get rewritten by a VACUUM, retried at the next start if it fails.
     fn prepare(mut connection: Connection) -> std::result::Result<Connection, OpenFailure> {
         connection
             .pragma_update(None, "foreign_keys", true)
@@ -233,8 +286,11 @@ impl Database {
         connection
             .busy_timeout(std::time::Duration::from_secs(5))
             .map_err(OpenFailure::classify)?;
-        // ! The integrity check runs first: a damaged file must be recognised as
-        // ! such rather than reported as a version or query error.
+        // ! From here on, `secure_delete` zeroes freed pages instead of leaving previous plaintext in the file.
+        connection
+            .pragma_update(None, "secure_delete", true)
+            .map_err(OpenFailure::classify)?;
+        // ! Runs first so a damaged file is recognised as corrupt rather than reported as a version or query error.
         let check: String = connection
             .query_row("PRAGMA quick_check", [], |row| row.get(0))
             .map_err(OpenFailure::classify)?;
@@ -259,8 +315,7 @@ impl Database {
         Ok(connection)
     }
 
-    /// Each step and its version bump commit together, so a crash midway
-    /// leaves the file at the version it reports.
+    // ! Each step and its version bump commit together, so a crash midway leaves the file at the version it reports.
     fn upgrade(connection: &mut Connection, from: i64) -> std::result::Result<(), OpenFailure> {
         for (index, step) in UPGRADES.iter().enumerate() {
             let target = index as i64 + 2;
@@ -276,14 +331,45 @@ impl Database {
             transaction
                 .pragma_update(None, "user_version", target)
                 .map_err(OpenFailure::classify)?;
+            if target == 3 {
+                // ! Set inside the same transaction that crosses the secure_delete boundary, so
+                // a crash or a later step's failure can never separate "reached version 3" from
+                // "owes a VACUUM for the plaintext secure_delete left behind".
+                set_vacuum_pending(&transaction).map_err(OpenFailure::classify)?;
+            }
             transaction.commit().map_err(OpenFailure::classify)?;
         }
         Ok(())
     }
 }
 
-/// `<name>.db.bak`, or `<name>.db.<unix time>[-n].bak` when that exists already:
-/// a backup made by an earlier recovery is never overwritten.
+// ! Tracks whether the secure_delete migration still owes its VACUUM, so a failed VACUUM is retried at next start instead of being silently skipped.
+const VACUUM_PENDING_KEY: &str = "_storage_vacuum_pending";
+
+fn vacuum_pending(connection: &Connection) -> rusqlite::Result<bool> {
+    connection
+        .query_row(
+            "SELECT 1 FROM setting WHERE key = ?1",
+            [VACUUM_PENDING_KEY],
+            |_| Ok(()),
+        )
+        .optional()
+        .map(|row| row.is_some())
+}
+
+fn set_vacuum_pending(connection: &Connection) -> rusqlite::Result<()> {
+    connection.execute(
+        "INSERT OR REPLACE INTO setting (key, value) VALUES (?1, '1')",
+        [VACUUM_PENDING_KEY],
+    )?;
+    Ok(())
+}
+
+fn clear_vacuum_pending(connection: &Connection) -> rusqlite::Result<()> {
+    connection.execute("DELETE FROM setting WHERE key = ?1", [VACUUM_PENDING_KEY])?;
+    Ok(())
+}
+
 fn unused_backup_path(path: &Path) -> PathBuf {
     let first = path.with_extension("db.bak");
     if !first.exists() {
@@ -308,8 +394,7 @@ fn unused_backup_path(path: &Path) -> PathBuf {
     }
 }
 
-/// Moves the database and the journal files SQLite keeps next to it, so the
-/// fresh database does not pick up a write-ahead log from the damaged one.
+// ! Also moves SQLite's own journal files so the fresh database doesn't inherit a stale write-ahead log.
 fn move_aside(path: &Path, backup: &Path) -> Result<()> {
     fs::rename(path, backup)
         .map_err(|error| SteamError::io("Keep the unreadable database aside", error))?;
@@ -323,8 +408,7 @@ fn move_aside(path: &Path, backup: &Path) -> Result<()> {
     Ok(())
 }
 
-/// ! The database holds Steam Guard secrets, so only the owner may read it.
-/// ! SQLite's journal files copy the database's permissions.
+// ! Owner-only: holds secrets, and SQLite's journal files copy the database's permissions.
 fn restrict_permissions(path: &Path) {
     #[cfg(unix)]
     {

@@ -1,22 +1,24 @@
-import { ErrorApiMessage } from "../errors/errors.constants";
+import { UiErrorCode } from "../errors/errors.constants";
 import { t } from "../i18n/i18n.svelte";
 import { GuardAction, SteamGuardScreen, SteamGuardField } from "./steam-guard.constants";
-import { BackupMode, PickFileKind } from "../vault/backup.constants";
+import { BackupMode } from "../vault/backup.constants";
+import { PickKind } from "../bindings/PickKind";
 import { untrack } from "svelte";
-import { accounts, app, openAccount, showToast, vault, vaultReady } from "../state/state.svelte";
+import { accounts, app, openAccount, vault, vaultReady } from "../state/state.svelte";
+import { ToastKind } from "../state/state.constants";
+import { toast } from "../state/toasts";
 import { invoke } from "../api/tauri";
 import { createGuardSession } from "./steam-guard-session.svelte";
 import { createLoginController } from "./steam-guard-login.svelte";
 import { createLinkController } from "./steam-guard-link.svelte";
 import type { GuardFlowType } from "./steam-guard-flow";
-import type { SnapshotType } from "../types";
+import type { SnapshotDto } from "../bindings/SnapshotDto";
 
 export const createAddAccountController = () => {
   const session = createGuardSession({ needsCode: () => loginFlow.guardNeedsCode });
 
   let importPath = $state("");
   let importPasskey = $state("");
-  //! Only shown once the backend asked for it: most .maFile exports are plain.
   let passkeyNeeded = $state(false);
 
   const finish = (steamId: string | null): void => {
@@ -64,6 +66,7 @@ export const createAddAccountController = () => {
         () => {},
       );
     }
+    void invoke("steam_guard_clear_picked_file", { kind: PickKind.MAFILE }).catch(() => {});
     app.addAccountOpen = false;
     reset();
   };
@@ -96,7 +99,7 @@ export const createAddAccountController = () => {
 
   const pickFile = async (): Promise<void> => {
     const chosen = await session.guard(
-      () => invoke("steam_guard_pick_file", { kind: PickFileKind.MAFILE }),
+      () => invoke("steam_guard_pick_file", { kind: PickKind.MAFILE }),
       GuardAction.BROWSE,
     );
     if (typeof chosen === "string") {
@@ -104,30 +107,30 @@ export const createAddAccountController = () => {
     }
   };
 
-  const newAccountId = (before: Set<string>, snapshot: SnapshotType): string | null => {
+  const newAccountId = (before: Set<string>, snapshot: SnapshotDto): string | null => {
     const added = snapshot.accounts.filter((entry) => !before.has(entry.steam_id));
     return added.length === 1 ? added[0].steam_id : null;
   };
 
   const runImport = async (): Promise<void> => {
     if (!importPath) {
-      session.fail(ErrorApiMessage.BACKUP_FILE_REQUIRED, SteamGuardField.IMPORT_FILE);
+      session.fail(UiErrorCode.BACKUP_FILE_REQUIRED, SteamGuardField.IMPORT_FILE);
       return;
     }
     const before = new Set(accounts().map((entry) => entry.steam_id));
     const result = await session.guard(
-      () => invoke("steam_guard_import", { path: importPath, passkey: importPasskey || null }),
+      () => invoke("steam_guard_import", { passkey: importPasskey || null }),
       GuardAction.IMPORT,
     );
     if (result) {
       session.applyResult(result);
-      showToast(t.guard_import_success(), true);
+      toast(ToastKind.SUCCESS, t.guard_import_success());
       finish(newAccountId(before, result));
       return;
     }
     if (
-      session.errorCode === ErrorApiMessage.BACKUP_PASSWORD_REQUIRED ||
-      session.errorCode === ErrorApiMessage.BACKUP_DECRYPTION_FAILED
+      session.errorCode === UiErrorCode.BACKUP_PASSWORD_REQUIRED ||
+      session.errorCode === UiErrorCode.BACKUP_DECRYPTION_FAILED
     ) {
       passkeyNeeded = true;
     }

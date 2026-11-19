@@ -9,7 +9,7 @@
 
   let refreshing = $state(false);
 
-  const showUpdate = $derived(Boolean(app.update || app.updateStage));
+  const showUpdate = $derived(Boolean(app.update) || app.updateStage !== UpdateStage.IDLE);
   const updateLabel = $derived(updateButtonLabel());
 
   const refresh = async () => {

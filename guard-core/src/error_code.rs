@@ -1,8 +1,11 @@
 use std::fmt;
 
-/// ! The string form crosses IPC and is matched by the interface's message
-/// ! tables: renaming a code changes the user-facing text.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+use ts_rs::TS;
+
+// ! The string form crosses IPC and is matched by the interface's message tables: renaming a code changes the user-facing text.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, TS)]
+#[ts(export_to = "ErrorCode.ts", rename_all = "SCREAMING_SNAKE_CASE")]
+#[ts(repr(enum = name))]
 pub enum ErrorCode {
     UnknownError,
     BackupEmpty,
@@ -54,9 +57,11 @@ pub enum ErrorCode {
     ClipboardUnavailable,
     LogUnavailable,
     OpenFolderFailed,
+    OpenUrlFailed,
     UpdateFailed,
     NoUpdate,
     NoDownloadedUpdate,
+    UpdatePortableUnsupported,
     WorkerFailed,
     SettingsSaveFailed,
     AutostartFailed,
@@ -65,7 +70,9 @@ pub enum ErrorCode {
     WrongGuardCode,
     SteamRateLimited,
     DatabaseVersionMismatch,
+    VaultRequiresNewerVersion,
     ProfileUnavailable,
+    LinkInFlight,
 }
 
 impl ErrorCode {
@@ -121,9 +128,11 @@ impl ErrorCode {
             Self::ClipboardUnavailable => "CLIPBOARD_UNAVAILABLE",
             Self::LogUnavailable => "LOG_UNAVAILABLE",
             Self::OpenFolderFailed => "OPEN_FOLDER_FAILED",
+            Self::OpenUrlFailed => "OPEN_URL_FAILED",
             Self::UpdateFailed => "UPDATE_FAILED",
             Self::NoUpdate => "NO_UPDATE",
             Self::NoDownloadedUpdate => "NO_DOWNLOADED_UPDATE",
+            Self::UpdatePortableUnsupported => "UPDATE_PORTABLE_UNSUPPORTED",
             Self::WorkerFailed => "WORKER_FAILED",
             Self::SettingsSaveFailed => "SETTINGS_SAVE_FAILED",
             Self::AutostartFailed => "AUTOSTART_FAILED",
@@ -132,7 +141,9 @@ impl ErrorCode {
             Self::WrongGuardCode => "WRONG_GUARD_CODE",
             Self::SteamRateLimited => "STEAM_RATE_LIMITED",
             Self::DatabaseVersionMismatch => "DATABASE_VERSION_MISMATCH",
+            Self::VaultRequiresNewerVersion => "VAULT_REQUIRES_NEWER_VERSION",
             Self::ProfileUnavailable => "PROFILE_UNAVAILABLE",
+            Self::LinkInFlight => "LINK_IN_FLIGHT",
         }
     }
 
@@ -188,9 +199,11 @@ impl ErrorCode {
             "CLIPBOARD_UNAVAILABLE" => Some(Self::ClipboardUnavailable),
             "LOG_UNAVAILABLE" => Some(Self::LogUnavailable),
             "OPEN_FOLDER_FAILED" => Some(Self::OpenFolderFailed),
+            "OPEN_URL_FAILED" => Some(Self::OpenUrlFailed),
             "UPDATE_FAILED" => Some(Self::UpdateFailed),
             "NO_UPDATE" => Some(Self::NoUpdate),
             "NO_DOWNLOADED_UPDATE" => Some(Self::NoDownloadedUpdate),
+            "UPDATE_PORTABLE_UNSUPPORTED" => Some(Self::UpdatePortableUnsupported),
             "WORKER_FAILED" => Some(Self::WorkerFailed),
             "SETTINGS_SAVE_FAILED" => Some(Self::SettingsSaveFailed),
             "AUTOSTART_FAILED" => Some(Self::AutostartFailed),
@@ -199,7 +212,9 @@ impl ErrorCode {
             "WRONG_GUARD_CODE" => Some(Self::WrongGuardCode),
             "STEAM_RATE_LIMITED" => Some(Self::SteamRateLimited),
             "DATABASE_VERSION_MISMATCH" => Some(Self::DatabaseVersionMismatch),
+            "VAULT_REQUIRES_NEWER_VERSION" => Some(Self::VaultRequiresNewerVersion),
             "PROFILE_UNAVAILABLE" => Some(Self::ProfileUnavailable),
+            "LINK_IN_FLIGHT" => Some(Self::LinkInFlight),
             _ => None,
         }
     }

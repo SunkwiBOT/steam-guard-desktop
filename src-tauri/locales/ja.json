@@ -8,5 +8,8 @@
   "tray_locked": "保管庫はロック中",
   "tray_no_accounts": "アカウントなし",
   "tray_open": "開く",
-  "tray_quit": "終了"
+  "tray_quit": "終了",
+  "exit_blocked_link_in_flight": "Steam とのリンクが進行中は、Steam Guard Desktop を閉じることができません。先に完了するかキャンセルしてください。",
+  "database_open_failed_body": "アプリケーションのデータベースを開けませんでした (%{code})。\n\n場所: %{path}\n\nファイルはそのまま残されています。問題(ディスク容量、権限、または対応するアプリのバージョンの実行)を解決してから再起動してください。",
+  "database_recovered_notice": "起動時に破損したデータベースファイルが見つかり、「%{backup}」として退避されました。新しい空のデータベースが作成されました。アカウントを再度追加するか、古いファイルを手動で復元してみてください。"
 }

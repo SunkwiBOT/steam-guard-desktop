@@ -2,13 +2,10 @@ import { t } from "../i18n/i18n.svelte";
 import { app } from "../state/state.svelte";
 import { vaultCountdown } from "./vault-lock";
 
-/** Label of the time left before the vault locks itself, or "" when it will
- *  not. Must be created inside a component or an effect root. */
+// ! Must be created inside a component or an effect root.
 export const createLockCountdown = () => {
   const lockInSeconds = $derived(app.snapshot?.vault.lock_in_seconds ?? null);
   let remaining = $state<number | null>(null);
-  //! Anchored on a deadline, not decremented: a throttled background timer
-  //! cannot desync it, and regaining focus snaps it back immediately.
   let lockAt = 0;
   $effect(() => {
     const seconds = lockInSeconds;

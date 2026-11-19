@@ -17,12 +17,6 @@
   background: var(--backdrop);
 }
 
-/* Native dialogs share the overlay of the div-based modals. */
-.backup-dialog::backdrop,
-.vault-password-dialog::backdrop {
-  background: var(--backdrop);
-}
-
 .dialog {
   position: relative;
   width: min(1160px, 94vw);
@@ -41,18 +35,6 @@
   width: min(520px, 92vw);
   height: auto;
   overflow: auto;
-}
-
-.dialog.backup-dialog {
-  position: fixed;
-  inset: 0;
-  height: fit-content;
-  margin: auto;
-  color: var(--text);
-}
-
-.backup-dialog:not([open]) {
-  display: none;
 }
 
 .backup-dialog form {
@@ -150,7 +132,7 @@
 
 .icon-button:disabled {
   opacity: 0.45;
-  cursor: default;
+  cursor: not-allowed;
 }
 
 .history-notice {
@@ -177,6 +159,35 @@
   justify-content: flex-end;
   gap: 8px;
   padding-top: 4px;
+}
+
+.unsaved-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+  padding: 8px 10px;
+  border-radius: 3px;
+  background: var(--warning);
+  border: 1px solid var(--border);
+}
+
+.unsaved-bar-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--warning-foreground);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.unsaved-bar-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
 }
 
 .progress {

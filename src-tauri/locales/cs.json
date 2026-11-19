@@ -8,5 +8,8 @@
   "tray_locked": "Trezor zamčen",
   "tray_no_accounts": "Žádné účty",
   "tray_open": "Otevřít",
-  "tray_quit": "Ukončit"
+  "tray_quit": "Ukončit",
+  "exit_blocked_link_in_flight": "Steam Guard Desktop se nemůže zavřít, dokud probíhá propojení se Steamem. Nejdříve ho dokončete nebo zrušte.",
+  "database_open_failed_body": "Databázi aplikace se nepodařilo otevřít (%{code}).\n\nUmístění: %{path}\n\nSoubor zůstal nedotčen. Vyřešte problém (místo na disku, oprávnění nebo spusťte odpovídající verzi aplikace) a restartujte.",
+  "database_recovered_notice": "Při spuštění byl nalezen poškozený soubor databáze a byl odložen jako „%{backup}“. Byla vytvořena nová, prázdná databáze; přidejte své účty znovu, nebo zkuste starý soubor obnovit ručně."
 }

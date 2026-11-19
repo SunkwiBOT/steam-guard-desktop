@@ -8,5 +8,8 @@
   "tray_locked": "Caja fuerte bloqueada",
   "tray_no_accounts": "Sin cuentas",
   "tray_open": "Abrir",
-  "tray_quit": "Salir"
+  "tray_quit": "Salir",
+  "exit_blocked_link_in_flight": "Steam Guard Desktop no puede cerrarse mientras hay una vinculación de Steam en curso. Termínala o cancélala primero.",
+  "database_open_failed_body": "No se pudo abrir la base de datos de la aplicación (%{code}).\n\nUbicación: %{path}\n\nEl archivo se dejó intacto. Solucione el problema (espacio en disco, permisos o ejecute la versión correspondiente de la app) y reinicie.",
+  "database_recovered_notice": "Se encontró un archivo de base de datos dañado al iniciar y se apartó como «%{backup}». Se creó una base de datos nueva y vacía; añada sus cuentas de nuevo, o intente recuperar el archivo antiguo manualmente."
 }

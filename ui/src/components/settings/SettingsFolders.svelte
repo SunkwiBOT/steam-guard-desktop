@@ -1,7 +1,6 @@
 <script lang="ts">
   import { t } from "../../lib/i18n/i18n.svelte";
 
-  import { FolderAction } from "./SettingsFolders.constants";
   import ActionButton from "../ui/ActionButton.svelte";
   import { createFolder, deleteFolder } from "../../lib/actions/actions.svelte";
   import { folders } from "../../lib/state/state.svelte";
@@ -9,11 +8,10 @@
   import { Folder, Plus, SquarePen, Trash2 } from "@lucide/svelte";
   import { folderIcon } from "../../lib/folders/folder-icons";
   import { tintStyle } from "../../lib/folders/folder-style";
-  import type { FolderType } from "../../lib/types";
+  import type { FolderDto } from "../../lib/bindings/FolderDto";
 
   let name = $state("");
   let creating = $state(false);
-  let pending = $state<Partial<Record<string, FolderAction>>>({});
   const list = $derived(folders());
 
   const create = async () => {
@@ -29,14 +27,8 @@
     }
   };
 
-  const remove = async (folder: FolderType): Promise<void> => {
-    if (pending[folder.id]) return;
-    pending[folder.id] = FolderAction.DELETE;
-    try {
-      await deleteFolder(folder.id);
-    } finally {
-      delete pending[folder.id];
-    }
+  const remove = (folder: FolderDto): void => {
+    deleteFolder(folder.id);
   };
 </script>
 
@@ -56,22 +48,13 @@
             </span>
             <span class="settings-label">{folder.name}</span>
             <span class="tag">{t.accounts_count({ count: folder.account_count })}</span>
-            <button
-              class="button"
-              type="button"
-              disabled={Boolean(pending[folder.id])}
-              onclick={() => openFolderEditor(folder.id)}
+            <button class="button" type="button" onclick={() => openFolderEditor(folder.id)}
               ><SquarePen size={15} /> {t.folder_edit_action()}</button
             >
-            <ActionButton
-              icon={Trash2}
-              label={t.common_delete()}
-              busyLabel={t.common_deleting()}
-              busy={pending[folder.id] === FolderAction.DELETE}
-              disabled={Boolean(pending[folder.id])}
-              className="button danger"
-              onclick={() => remove(folder)}
-            />
+            <button class="button danger" type="button" onclick={() => remove(folder)}>
+              <Trash2 size={15} />
+              {t.common_delete()}
+            </button>
           </div>
         {/each}
       {/if}

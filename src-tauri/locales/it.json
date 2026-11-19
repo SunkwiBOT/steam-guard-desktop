@@ -8,5 +8,8 @@
   "tray_locked": "Cassaforte bloccata",
   "tray_no_accounts": "Nessun account",
   "tray_open": "Aprire",
-  "tray_quit": "Uscire"
+  "tray_quit": "Uscire",
+  "exit_blocked_link_in_flight": "Steam Guard Desktop non può chiudersi mentre è in corso un collegamento Steam. Completarlo o annullarlo prima.",
+  "database_open_failed_body": "Impossibile aprire il database dell'applicazione (%{code}).\n\nPosizione: %{path}\n\nIl file è stato lasciato intatto. Risolvere il problema (spazio su disco, permessi o eseguire la versione corrispondente dell'app) e riavviare.",
+  "database_recovered_notice": "All'avvio è stato trovato un file di database danneggiato, spostato come \"%{backup}\". È stato creato un nuovo database vuoto; aggiungere di nuovo gli account, oppure provare a recuperare manualmente il vecchio file."
 }

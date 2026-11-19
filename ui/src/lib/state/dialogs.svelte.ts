@@ -13,6 +13,7 @@ export type ConfirmStateType = {
   danger: boolean;
   steamId: string | null;
   kind: ConfirmKind;
+  busy: boolean;
 };
 
 export const confirmDialog: ConfirmStateType = $state({
@@ -25,13 +26,19 @@ export const confirmDialog: ConfirmStateType = $state({
   danger: false,
   steamId: null,
   kind: ConfirmKind.CONFIRM,
+  busy: false,
 });
 
 export type ConfirmAnswerType = {
   checked: boolean;
 };
 
-let confirmResolve: ((value: ConfirmAnswerType | null) => void) | null = null;
+// ! Runs while the dialog stays open and busy: the action itself decides whether the dialog
+// closes (`true`) or stays open for a retry (`false`), so a failed request never forces the
+// user to reopen the dialog and re-tick a required checkbox.
+export type ConfirmActionType = (answer: ConfirmAnswerType) => Promise<boolean>;
+
+let confirmAction: ConfirmActionType | null = null;
 
 export const askConfirm = ({
   title,
@@ -42,6 +49,7 @@ export const askConfirm = ({
   danger = false,
   steamId = null,
   kind = ConfirmKind.CONFIRM,
+  action,
 }: {
   title: string;
   text: MessageType;
@@ -51,7 +59,9 @@ export const askConfirm = ({
   danger?: boolean;
   steamId?: string | null;
   kind?: ConfirmStateType["kind"];
-}): Promise<ConfirmAnswerType | null> => {
+  action: ConfirmActionType;
+}): void => {
+  confirmAction = action;
   Object.assign(confirmDialog, {
     open: true,
     title,
@@ -62,17 +72,28 @@ export const askConfirm = ({
     danger,
     steamId,
     kind,
-  });
-  return new Promise((resolve) => {
-    confirmResolve = resolve;
+    busy: false,
   });
 };
 
-export const answerConfirm = (value: ConfirmAnswerType | null): void => {
+export const runConfirmAction = async (answer: ConfirmAnswerType): Promise<void> => {
+  if (!confirmAction || confirmDialog.busy) return;
+  const action = confirmAction;
+  confirmDialog.busy = true;
+  try {
+    if (await action(answer)) {
+      confirmDialog.open = false;
+      confirmAction = null;
+    }
+  } finally {
+    confirmDialog.busy = false;
+  }
+};
+
+export const cancelConfirm = (): void => {
+  if (confirmDialog.busy) return;
   confirmDialog.open = false;
-  const resolve = confirmResolve;
-  confirmResolve = null;
-  resolve?.(value);
+  confirmAction = null;
 };
 
 export type FolderDialogStateType = {
@@ -91,7 +112,6 @@ export const folderDialog: FolderDialogStateType = $state({
 
 let folderResolve: ((value: string | null) => void) | null = null;
 
-/** Asks for a folder name; resolves to `null` when cancelled or left empty. */
 export const askFolderName = ({
   title = t.folder_create_title(),
   value = "",

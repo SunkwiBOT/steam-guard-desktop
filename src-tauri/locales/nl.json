@@ -8,5 +8,8 @@
   "tray_locked": "Kluis vergrendeld",
   "tray_no_accounts": "Geen accounts",
   "tray_open": "Openen",
-  "tray_quit": "Afsluiten"
+  "tray_quit": "Afsluiten",
+  "exit_blocked_link_in_flight": "Steam Guard Desktop kan niet afsluiten terwijl een Steam-koppeling bezig is. Voltooi of annuleer deze eerst.",
+  "database_open_failed_body": "De toepassingsdatabase kon niet worden geopend (%{code}).\n\nLocatie: %{path}\n\nHet bestand is ongewijzigd gelaten. Los het probleem op (schijfruimte, rechten of start de bijpassende app-versie) en start opnieuw.",
+  "database_recovered_notice": "Bij het opstarten is een beschadigd databasebestand gevonden en opzijgezet als \"%{backup}\". Er is een nieuwe, lege database aangemaakt; voeg uw accounts opnieuw toe, of probeer het oude bestand handmatig te herstellen."
 }

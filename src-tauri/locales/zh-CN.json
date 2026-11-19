@@ -8,5 +8,8 @@
   "tray_locked": "保险库已锁定",
   "tray_no_accounts": "没有账户",
   "tray_open": "打开",
-  "tray_quit": "退出"
+  "tray_quit": "退出",
+  "exit_blocked_link_in_flight": "在 Steam 关联操作进行时,Steam Guard Desktop 无法关闭。请先完成或取消该操作。",
+  "database_open_failed_body": "无法打开应用程序数据库 (%{code})。\n\n位置：%{path}\n\n该文件未被修改。请解决问题（磁盘空间、权限,或运行匹配的应用版本）后重新启动。",
+  "database_recovered_notice": "启动时发现损坏的数据库文件，已将其移至一旁并命名为“%{backup}”。已创建一个新的空数据库；请重新添加您的账户，或尝试手动恢复旧文件。"
 }

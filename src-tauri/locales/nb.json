@@ -8,5 +8,8 @@
   "tray_locked": "Hvelvet er låst",
   "tray_no_accounts": "Ingen kontoer",
   "tray_open": "Åpne",
-  "tray_quit": "Avslutt"
+  "tray_quit": "Avslutt",
+  "exit_blocked_link_in_flight": "Steam Guard Desktop kan ikke lukkes mens en Steam-kobling pågår. Fullfør eller avbryt den først.",
+  "database_open_failed_body": "Applikasjonens database kunne ikke åpnes (%{code}).\n\nPlassering: %{path}\n\nFilen ble latt urørt. Løs problemet (diskplass, tillatelser eller kjør den tilsvarende appversjonen) og start på nytt.",
+  "database_recovered_notice": "Ved oppstart ble det funnet en skadet databasefil som ble lagt til side som «%{backup}». En ny, tom database ble opprettet; legg til kontoene dine på nytt, eller prøv å gjenopprette den gamle filen manuelt."
 }

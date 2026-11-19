@@ -1,26 +1,23 @@
-use std::path::Path;
-
 use guard_core::error_code::ErrorCode;
 use tauri::{AppHandle, State};
+use ts_rs::TS;
 
 use super::vault::vault_snapshot;
 use crate::commands::SnapshotDto;
 use crate::state::{lock_authenticator, AppState};
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, TS)]
+#[ts(export_to = "BackupImportDto.ts")]
 pub struct BackupImportDto {
     pub imported: usize,
     pub skipped: usize,
     pub snapshot: SnapshotDto,
 }
 
-/// Extension of the backup files, shared with the switcher so either app can
-/// import the other's export.
-pub(super) const BACKUP_EXTENSION: &str = "steamguard";
+// ! Shared with the switcher so either app can import the other's export.
+pub(crate) const BACKUP_EXTENSION: &str = "steamguard";
 
-/// ! The destination comes from a native save dialog opened here, never from
-/// the page, so a script in the webview can never choose where the secrets are
-/// written. `None` means cancelled.
+// ! The destination comes from a native save dialog opened here, never from the page, so a script in the webview cannot choose where the secrets are written.
 #[tauri::command]
 pub async fn steam_guard_export_backup(
     app: AppHandle,
@@ -69,26 +66,27 @@ pub async fn steam_guard_export_backup(
     .await
 }
 
+// ! The path comes from the state set by `steam_guard_pick_file`, never from the page.
 #[tauri::command]
 pub async fn steam_guard_import_backup(
     app: AppHandle,
     state: State<'_, AppState>,
-    path: String,
     password: Option<String>,
 ) -> Result<BackupImportDto, String> {
     let password = password.map(zeroize::Zeroizing::new);
+    let path = state
+        .picked_backup()
+        .ok_or_else(|| ErrorCode::IoError.to_string())?;
     crate::logging::run_async("steam_guard_import_backup", async {
         let authenticator = state.authenticator();
         let result = tauri::async_runtime::spawn_blocking(move || {
             lock_authenticator(&authenticator)
-                .import_backup(
-                    Path::new(&path),
-                    password.as_deref().map(|value| value.as_str()),
-                )
+                .import_backup(&path, password.as_deref().map(|value| value.as_str()))
                 .map_err(|error| error.to_string())
         })
         .await
         .map_err(|_| ErrorCode::WorkerFailed.to_string())??;
+        state.clear_picked_backup();
         if result.imported > 0 {
             crate::commands::profiles::fetch_missing_in_background(&app);
         }

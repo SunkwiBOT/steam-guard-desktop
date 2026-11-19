@@ -1,3 +1,28 @@
+/* ! svelte-sonner disables its own toast transitions under prefers-reduced-motion with !important;
+this wins on specificity, not source order, so a later library rule of equal specificity cannot
+override it back. Swiping toasts keep the library's own `transition: none` while dragged. */
+@media (prefers-reduced-motion: reduce) {
+  [data-sonner-toaster] [data-sonner-toast]:not([data-swiping="true"]) {
+    transition:
+      transform 400ms,
+      opacity 400ms,
+      height 400ms,
+      box-shadow 200ms !important;
+  }
+  [data-sonner-toaster] [data-sonner-toast]:not([data-swiping="true"]) > * {
+    transition: opacity 400ms !important;
+  }
+  [data-sonner-toaster] .sonner-loading-bar {
+    animation: sonner-spin 1.2s linear infinite !important;
+  }
+}
+
+/* ! bits-ui sets `pointer-events: none` on `body` while a dialog is open; without this the
+toaster inherits it and a click on a toast falls through to the dialog's overlay. */
+[data-sonner-toaster] {
+  pointer-events: auto;
+}
+
 .busy {
   position: fixed;
   inset: 0;
@@ -11,8 +36,7 @@
   color: var(--text-strong);
 }
 
-.busy[hidden],
-.toast[hidden] {
+.busy[hidden] {
   display: none;
 }
 
@@ -25,47 +49,67 @@
   animation: spin 0.2125s linear infinite;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .spinner {
-    animation-duration: 0.75s;
-  }
-}
-
 @keyframes spin {
   to {
     transform: rotate(360deg);
   }
 }
 
-.toast {
+.toast-card {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
-  position: fixed;
-  bottom: 18px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 100;
-  padding: 9px 14px;
+  padding: 10px 14px;
   border-radius: 4px;
   border: 1px solid var(--error-border);
   background: var(--error-bg);
   color: var(--error-text);
-  max-width: 70vw;
+  max-width: 360px;
 }
 
-.toast .avatar {
-  flex-shrink: 0;
-  font-size: 12px;
-}
-
-.toast-message {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.toast.ok {
+.toast-card.ok {
   border-color: var(--primary);
   background: var(--success-bg);
   color: var(--success-text);
+}
+
+.toast-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.toast-body {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.toast-title {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.toast-description {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.toast-close {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 2px;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.toast-close:hover {
+  opacity: 1;
 }

@@ -15,15 +15,16 @@
     LinkStatus,
     SteamGuardField,
   } from "../../lib/steam-guard/steam-guard.constants";
+  import type { LinkStatus as LinkStatusDto } from "../../lib/bindings/LinkStatus";
   type SteamGuardLinkPropsType = { flow: GuardFlowType; account: ToastAccountType | null };
 
-  const linkMessages: Partial<Record<LinkStatus, () => string>> = {
+  const linkMessages: Partial<Record<LinkStatusDto, () => string>> = {
     [LinkStatus.RESUME]: () => t.guard_link_resume(),
     [LinkStatus.NEEDS_PHONE]: () => t.guard_link_phone_required(),
     [LinkStatus.NEEDS_EMAIL]: () => t.guard_link_email_required(),
   };
 
-  const linkMessage = (status: LinkStatus): string =>
+  const linkMessage = (status: LinkStatusDto): string =>
     (linkMessages[status] ?? (() => t.common_unknown()))();
   let { flow, account }: SteamGuardLinkPropsType = $props();
   const name = $derived(account?.display_name || flow.link?.account_name || "");

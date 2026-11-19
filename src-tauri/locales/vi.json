@@ -8,5 +8,8 @@
   "tray_locked": "Kho đã khóa",
   "tray_no_accounts": "Không có tài khoản",
   "tray_open": "Mở",
-  "tray_quit": "Thoát"
+  "tray_quit": "Thoát",
+  "exit_blocked_link_in_flight": "Steam Guard Desktop không thể đóng khi đang liên kết Steam. Hãy hoàn tất hoặc hủy trước.",
+  "database_open_failed_body": "Không thể mở cơ sở dữ liệu của ứng dụng (%{code}).\n\nVị trí: %{path}\n\nTệp đã được giữ nguyên. Khắc phục sự cố (dung lượng ổ đĩa, quyền truy cập, hoặc chạy đúng phiên bản ứng dụng) rồi khởi động lại.",
+  "database_recovered_notice": "Khi khởi động, đã tìm thấy một tệp cơ sở dữ liệu bị hỏng và được chuyển sang tên \"%{backup}\". Một cơ sở dữ liệu mới, trống đã được tạo; hãy thêm lại các tài khoản của bạn, hoặc thử khôi phục tệp cũ theo cách thủ công."
 }

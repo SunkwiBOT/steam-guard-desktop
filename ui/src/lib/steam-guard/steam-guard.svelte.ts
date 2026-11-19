@@ -1,8 +1,9 @@
 import { t, rich } from "../i18n/i18n.svelte";
 import { GuardAction, SteamGuardScreen, LoginPurpose } from "./steam-guard.constants";
-import { SettingsSection } from "../state/state.constants";
+import { SettingsSection, ToastKind } from "../state/state.constants";
 import { untrack } from "svelte";
-import { accountById, app, showToast, vault, vaultReady } from "../state/state.svelte";
+import { accountById, app, vault, vaultReady } from "../state/state.svelte";
+import { toast } from "../state/toasts";
 import { invoke } from "../api/tauri";
 import { askConfirm } from "../state/dialogs.svelte";
 import { exportAccount, forgetAccount, refreshProfile } from "../actions/actions.svelte";
@@ -37,7 +38,7 @@ export const createSteamGuardController = () => {
     session.setScreen(SteamGuardScreen.HOME);
     confirmations.clear();
     session.applyResult(await invoke("snapshot"));
-    showToast(t.guard_sign_in_success(), true, entry);
+    toast(ToastKind.SUCCESS, t.guard_sign_in_success(), { account: entry });
   };
 
   const loginFlow = createLoginController({
@@ -93,7 +94,6 @@ export const createSteamGuardController = () => {
     untrack(() => {
       reset();
       if (open && !accountId) app.steamGuardOpen = false;
-      // Opened from "sign in again": land on the form, unless the vault must be unlocked first.
       const signIn = app.steamGuardSignIn;
       app.steamGuardSignIn = false;
       if (open && accountId && signIn && vaultReady()) loginFlow.beginSignIn();
@@ -121,44 +121,40 @@ export const createSteamGuardController = () => {
     app.settingsOpen = true;
   };
 
-  /** A pending link resumes directly when Steam tokens are still held,
-   *  otherwise the sign-in comes first. */
   const resumeActivation = async (): Promise<void> => {
     if (!entry) return;
     if (entry.has_tokens) await linkFlow.start(entry.steam_id);
     else loginFlow.beginLink();
   };
 
-  const removeAuthenticator = async (): Promise<void> => {
-    if (!entry) {
-      return;
-    }
-    const answer = await askConfirm({
+  const removeAuthenticator = (): void => {
+    if (!entry) return;
+    const account = entry;
+    askConfirm({
       title: t.guard_remove_title(),
-      steamId: entry.steam_id,
-      text: rich(t.guard_remove_description, { account: entry.display_name }),
+      steamId: account.steam_id,
+      text: rich(t.guard_remove_description, { account: account.display_name }),
       confirmLabel: t.guard_remove_action(),
       danger: true,
+      action: async () => {
+        const result = await session.guard(
+          () => invoke("steam_guard_remove", { steamId: account.steam_id, revocationCode: null }),
+          GuardAction.REMOVE,
+        );
+        if (!result) return false;
+        session.applyResult(result);
+        linkFlow.clearRevocation();
+        confirmations.clear();
+        toast(ToastKind.SUCCESS, t.guard_remove_success(), { account });
+        close();
+        return true;
+      },
     });
-    if (!answer) {
-      return;
-    }
-    const result = await session.guard(
-      () => invoke("steam_guard_remove", { steamId: entry.steam_id, revocationCode: null }),
-      GuardAction.REMOVE,
-    );
-    if (result) {
-      session.applyResult(result);
-      linkFlow.clearRevocation();
-      confirmations.clear();
-      showToast(t.guard_remove_success(), true, entry);
-      close();
-    }
   };
 
-  const forget = async (): Promise<void> => {
+  const forget = (): void => {
     if (!entry || session.busy) return;
-    if (await forgetAccount(entry.steam_id)) close();
+    forgetAccount(entry.steam_id, close);
   };
 
   const refresh = async (): Promise<void> => {

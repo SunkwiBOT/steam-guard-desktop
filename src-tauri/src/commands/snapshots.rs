@@ -14,8 +14,6 @@ pub(crate) struct AccountList {
     pub vault: VaultStatus,
 }
 
-/// Lists the accounts the way the cards and the tray show them. While the
-/// vault is locked only the public index and the cached profiles are known.
 pub(crate) fn account_list(state: &AppState, masked: bool) -> AccountList {
     let settings = state.settings();
     let (vault, stored, configured, pending) = {
@@ -120,7 +118,6 @@ fn account_dto(
     }
 }
 
-/// ! Hidden Steam IDs are masked completely, like the dialog does.
 fn fallback_name(steam_id: &str, show_steam_ids: bool) -> String {
     if show_steam_ids {
         steam_id.to_string()
@@ -133,6 +130,22 @@ fn initial(display_name: &str) -> String {
     match display_name.trim().chars().next() {
         Some(character) => character.to_uppercase().to_string(),
         None => "?".to_string(),
+    }
+}
+
+pub(crate) fn settings_dto(settings: &Settings) -> SettingsDto {
+    SettingsDto {
+        language: settings.language,
+        resolved_language: settings.language.resolved().to_string(),
+        close_to_tray: settings.close_to_tray,
+        show_account_names: settings.show_account_names,
+        show_steam_ids: settings.show_steam_ids,
+        blur_codes: settings.blur_codes,
+        update_interval: settings.update_interval,
+        search_scope: settings.search_scope,
+        vault_lock_interval: settings.vault_lock_interval,
+        last_update_check_at: settings.last_update_check_at,
+        vault_offer_dismissed: settings.vault_offer_dismissed,
     }
 }
 
@@ -161,7 +174,6 @@ pub(crate) fn build_snapshot(state: &AppState) -> SnapshotDto {
                 .iter()
                 .filter(|account| account.folder_id.as_deref() == Some(folder.id.as_str()))
                 .count(),
-            system: false,
             color: folder.color.clone(),
             icon: folder.icon.clone(),
         })
@@ -173,21 +185,15 @@ pub(crate) fn build_snapshot(state: &AppState) -> SnapshotDto {
             status: list.vault,
             lock_in_seconds,
         },
-        settings: SettingsDto {
-            language: settings.language,
-            resolved_language: settings.language.resolved().to_string(),
-            close_to_tray: settings.close_to_tray,
-            show_account_names: settings.show_account_names,
-            show_steam_ids: settings.show_steam_ids,
-            blur_codes: settings.blur_codes,
-            update_interval: settings.update_interval,
-            search_scope: settings.search_scope,
-            vault_lock_interval: settings.vault_lock_interval,
-            last_update_check_at: settings.last_update_check_at,
-        },
+        settings: settings_dto(&settings),
         folders,
         masked,
     }
+}
+
+#[tauri::command(async)]
+pub fn default_settings() -> SettingsDto {
+    settings_dto(&Settings::default())
 }
 
 #[tauri::command(async)]

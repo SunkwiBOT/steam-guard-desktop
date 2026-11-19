@@ -8,5 +8,8 @@
   "tray_locked": "保險庫已鎖定",
   "tray_no_accounts": "沒有帳戶",
   "tray_open": "開啟",
-  "tray_quit": "結束"
+  "tray_quit": "結束",
+  "exit_blocked_link_in_flight": "在 Steam 連結操作進行時,Steam Guard Desktop 無法關閉。請先完成或取消該操作。",
+  "database_open_failed_body": "無法開啟應用程式資料庫 (%{code})。\n\n位置：%{path}\n\n該檔案未被修改。請解決問題（磁碟空間、權限,或執行相符的應用程式版本）後重新啟動。",
+  "database_recovered_notice": "啟動時發現損毀的資料庫檔案，已將其移至一旁並命名為「%{backup}」。已建立一個新的空資料庫；請重新加入您的帳號，或嘗試手動復原舊檔案。"
 }

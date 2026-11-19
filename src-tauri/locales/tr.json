@@ -8,5 +8,8 @@
   "tray_locked": "Kasa kilitli",
   "tray_no_accounts": "Hesap yok",
   "tray_open": "Aç",
-  "tray_quit": "Çık"
+  "tray_quit": "Çık",
+  "exit_blocked_link_in_flight": "Bir Steam bağlama işlemi sürerken Steam Guard Desktop kapanamaz. Önce işlemi bitirin veya iptal edin.",
+  "database_open_failed_body": "Uygulama veritabanı açılamadı (%{code}).\n\nKonum: %{path}\n\nDosya olduğu gibi bırakıldı. Sorunu giderin (disk alanı, izinler veya uygun uygulama sürümünü çalıştırın) ve yeniden başlatın.",
+  "database_recovered_notice": "Başlangıçta bozuk bir veritabanı dosyası bulundu ve \"%{backup}\" olarak kenara taşındı. Yeni, boş bir veritabanı oluşturuldu; hesaplarınızı yeniden ekleyin veya eski dosyayı elle kurtarmayı deneyin."
 }

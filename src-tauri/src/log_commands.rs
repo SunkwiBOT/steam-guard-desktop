@@ -1,4 +1,4 @@
-//! ! Access to the application's own diagnostics, never arbitrary filesystem paths.
+// ! Access to the application's own diagnostics, never arbitrary filesystem paths.
 
 use guard_core::error_code::ErrorCode;
 use tauri_plugin_opener::OpenerExt;
@@ -16,4 +16,11 @@ pub fn logs_open_directory(app: tauri::AppHandle) -> Result<(), String> {
             .open_path(directory.to_string_lossy(), None::<&str>)
             .map_err(|_| ErrorCode::OpenFolderFailed.to_string())
     })
+}
+
+#[tauri::command(async)]
+pub fn log_frontend_error(context: &str, message: &str) {
+    crate::logging::write(&format!(
+        "source=frontend context={context} message={message}"
+    ));
 }

@@ -57,7 +57,7 @@
       <button
         class="button"
         type="button"
-        disabled={app.updateCheck === UpdateCheck.CHECKING || Boolean(app.updateStage)}
+        disabled={app.updateCheck === UpdateCheck.CHECKING || app.updateStage !== UpdateStage.IDLE}
         onclick={checkForUpdate}
       >
         <AsyncIcon icon={RefreshCw} size={14} busy={app.updateCheck === UpdateCheck.CHECKING} />

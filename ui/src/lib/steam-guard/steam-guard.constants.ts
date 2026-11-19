@@ -1,10 +1,10 @@
 export enum GuardKind {
-  DEVICE_CODE = "device_code",
-  EMAIL_CODE = "email_code",
-  DEVICE_CONFIRMATION = "device_confirmation",
-  EMAIL_CONFIRMATION = "email_confirmation",
-  NONE = "none",
-  UNKNOWN = "unknown",
+  DEVICE_CODE = "DEVICE_CODE",
+  EMAIL_CODE = "EMAIL_CODE",
+  DEVICE_CONFIRMATION = "DEVICE_CONFIRMATION",
+  EMAIL_CONFIRMATION = "EMAIL_CONFIRMATION",
+  NONE = "NONE",
+  UNKNOWN = "UNKNOWN",
 }
 
 export enum SteamGuardScreen {
@@ -39,29 +39,29 @@ export enum GuardAction {
 }
 
 export enum LinkStatus {
-  RESUME = "resume",
-  LINKED = "linked",
-  AUTHENTICATOR_PRESENT = "authenticator_present",
-  NEEDS_PHONE = "needs_phone",
-  NEEDS_EMAIL = "needs_email",
+  RESUME = "RESUME",
+  LINKED = "LINKED",
+  AUTHENTICATOR_PRESENT = "AUTHENTICATOR_PRESENT",
+  NEEDS_PHONE = "NEEDS_PHONE",
+  NEEDS_EMAIL = "NEEDS_EMAIL",
 }
 
 export enum ConfirmationKind {
-  TRADE = "trade",
-  MARKET = "market",
-  PHONE = "phone",
-  RECOVERY = "recovery",
-  API_KEY = "api_key",
-  FEATURE = "feature",
-  FAMILY = "family",
-  TEST = "test",
-  OTHER = "other",
+  TRADE = "TRADE",
+  MARKET = "MARKET",
+  PHONE = "PHONE",
+  RECOVERY = "RECOVERY",
+  API_KEY = "API_KEY",
+  FEATURE = "FEATURE",
+  FAMILY = "FAMILY",
+  TEST = "TEST",
+  OTHER = "OTHER",
 }
 
 export enum LinkConfirmKind {
-  SMS = "sms",
-  EMAIL = "email",
-  UNKNOWN = "unknown",
+  SMS = "SMS",
+  EMAIL = "EMAIL",
+  UNKNOWN = "UNKNOWN",
 }
 
 export type ConfirmationActionType = `confirmation:${string}:${boolean}`;

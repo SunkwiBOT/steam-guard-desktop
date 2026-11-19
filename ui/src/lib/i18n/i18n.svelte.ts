@@ -15,7 +15,7 @@ export const locale = $state<{ preference: Language; current: ResolvedLanguageTy
 export const applyLanguage = (preference: Language, resolved?: ResolvedLanguageType): void => {
   locale.preference = preference;
   locale.current = resolved ?? (preference === Language.AUTO ? systemLocale() : preference);
-  setLocale(locale.current, { reload: false });
+  void setLocale(locale.current, { reload: false });
   document.documentElement.lang = locale.current;
 };
 

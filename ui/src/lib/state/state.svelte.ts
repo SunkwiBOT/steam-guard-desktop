@@ -1,45 +1,37 @@
 import { errorMessage } from "../errors/errors.svelte";
-import { Language } from "../i18n/i18n.constants";
+import { type Language, type ResolvedLanguageType } from "../i18n/i18n.constants";
 import { applyLanguage, t } from "../i18n/i18n.svelte";
 import {
-  SearchScope,
   SettingsSection,
   UpdateCheck,
-  UpdateInterval,
   UpdateStage,
-  VaultLockInterval,
+  SearchScope,
+  ToastKind,
 } from "./state.constants";
 import type { BackupMode } from "../vault/backup.constants";
 import { filterAccounts } from "../accounts/search";
 
 import { invoke, type CommandsType } from "../api/tauri";
-import type { MessageType, MessagePartType } from "../i18n/messages";
-import type {
-  AccountType,
-  AppInfoType,
-  FolderType,
-  SettingsType,
-  SnapshotType,
-  ToastAccountType,
-  ToastFolderType,
-  UpdateInfoType,
-  VaultStatusType,
-} from "../types";
+import type { MessageType } from "../i18n/messages";
+import type { AccountDto } from "../bindings/AccountDto";
+import type { AppInfoDto } from "../bindings/AppInfoDto";
+import type { FolderDto } from "../bindings/FolderDto";
+import type { SettingsDto } from "../bindings/SettingsDto";
+import type { SnapshotDto } from "../bindings/SnapshotDto";
+import type { UpdateInfoDto } from "../bindings/UpdateInfoDto";
+import type { VaultStatusDto } from "../bindings/VaultStatusDto";
+import type { ToastAccountType, ToastFolderType } from "../types";
+import { toast } from "./toasts";
 
-export const EMPTY_SETTINGS: SettingsType = {
-  language: Language.AUTO,
-  resolved_language: Language.EN,
-  close_to_tray: true,
-  show_account_names: true,
-  show_steam_ids: false,
-  blur_codes: false,
-  update_interval: UpdateInterval.SIX_HOURS,
-  search_scope: SearchScope.BOTH,
-  vault_lock_interval: VaultLockInterval.STARTUP,
-  last_update_check_at: null,
+// ! Placeholder settings shown before `default_settings`/`snapshot` resolve at startup; `loadDefaultSettings`
+// fetches the real value from `Settings::default()` (src-tauri/src/settings/model.rs) instead of mirroring it.
+export const defaultSettingsState: { value: SettingsDto | null } = $state({ value: null });
+
+export const loadDefaultSettings = async (): Promise<void> => {
+  defaultSettingsState.value = await invoke("default_settings");
 };
 
-export const EMPTY_VAULT: VaultStatusType = {
+export const EMPTY_VAULT: VaultStatusDto = {
   path: "",
   lock_in_seconds: null,
   encrypted: false,
@@ -47,27 +39,27 @@ export const EMPTY_VAULT: VaultStatusType = {
   indexed: true,
   count: 0,
   error: null,
+  password_suggested: false,
 };
 
 export type AppStateType = {
-  snapshot: SnapshotType | null;
-  info: AppInfoType;
+  snapshot: SnapshotDto | null;
+  info: AppInfoDto;
   search: string;
-  /** Open folder, `null` at the root. */
   folderId: string | null;
   idle: boolean;
   settingsOpen: boolean;
   settingsSection: SettingsSection;
   steamGuardOpen: boolean;
   steamGuardAccountId: string | null;
-  /** Set with `steamGuardOpen` to land on the sign-in form instead of the home screen. */
   steamGuardSignIn: boolean;
   addAccountOpen: boolean;
   vaultOpen: boolean;
+  vaultOfferOpen: boolean;
   vaultCopySteamId: string | null;
   backup: { mode: BackupMode; steamId: string | null } | null;
   updateDialog: boolean;
-  update: UpdateInfoType | null;
+  update: UpdateInfoDto | null;
   updateCheck: UpdateCheck;
   updateCheckedAt: number;
   updateStage: UpdateStage;
@@ -80,14 +72,6 @@ export type AppStateType = {
     active: boolean;
     text: string;
   };
-  toast: {
-    visible: boolean;
-    text: string;
-    parts: MessagePartType[];
-    ok: boolean;
-    account: ToastAccountType | null;
-    folder: ToastFolderType | null;
-  };
 };
 
 export const app: AppStateType = $state({
@@ -96,6 +80,8 @@ export const app: AppStateType = $state({
     name: "Steam Guard Desktop",
     version: "",
     repository: "",
+    backup_extension: "",
+    folder_icons: [],
   },
   search: "",
   folderId: null,
@@ -107,6 +93,7 @@ export const app: AppStateType = $state({
   steamGuardSignIn: false,
   addAccountOpen: false,
   vaultOpen: false,
+  vaultOfferOpen: false,
   vaultCopySteamId: null,
   backup: null,
   updateDialog: false,
@@ -117,72 +104,40 @@ export const app: AppStateType = $state({
   updateVersion: "",
   progress: { downloaded: 0, total: 0 },
   busy: { active: false, text: t.common_working() },
-  toast: { visible: false, text: "", parts: [], ok: false, account: null, folder: null },
 });
-
-let toastTimer = 0;
-
-export const showToast = (
-  content: MessageType,
-  ok = false,
-  account: ToastAccountType | null = null,
-  folder: ToastFolderType | null = null,
-): void => {
-  const parts = typeof content === "string" ? [{ text: content }] : content;
-  app.toast = {
-    visible: true,
-    text: parts.map((part) => part.text).join(""),
-    parts,
-    ok,
-    account: account
-      ? {
-          avatar: account.avatar,
-          initial: account.initial,
-          display_name: account.display_name,
-          persona_name: account.persona_name,
-        }
-      : null,
-    folder: folder ? { name: folder.name, color: folder.color, icon: folder.icon } : null,
-  };
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => {
-    app.toast = { ...app.toast, visible: false };
-  }, 4200);
-};
 
 export const setBusy = (active: boolean, text: string = t.common_working()): void => {
   app.busy = { active, text };
 };
 
-export const accounts = (): AccountType[] => app.snapshot?.accounts ?? [];
+export const accounts = (): AccountDto[] => app.snapshot?.accounts ?? [];
 
-export const vault = (): VaultStatusType => app.snapshot?.vault ?? EMPTY_VAULT;
+export const vault = (): VaultStatusDto => app.snapshot?.vault ?? EMPTY_VAULT;
 
 export const vaultReady = (): boolean => {
   const status = vault();
   return !status.locked && !status.error;
 };
 
-export const accountById = (steamId: string): AccountType | null =>
+export const accountById = (steamId: string): AccountDto | null =>
   accounts().find((entry) => entry.steam_id === steamId) ?? null;
 
-export const folders = (): FolderType[] => app.snapshot?.folders ?? [];
+export const folders = (): FolderDto[] => app.snapshot?.folders ?? [];
 
-export const folderById = (id: string): FolderType | null =>
+export const folderById = (id: string): FolderDto | null =>
   folders().find((folder) => folder.id === id) ?? null;
 
-export const currentFolder = (): FolderType | null =>
+export const currentFolder = (): FolderDto | null =>
   app.folderId === null ? null : folderById(app.folderId);
 
-export const visibleAccounts = (): AccountType[] =>
+export const visibleAccounts = (): AccountDto[] =>
   filterAccounts(accounts(), {
     folderId: app.folderId,
     search: app.search,
     scope: app.snapshot?.settings.search_scope ?? SearchScope.BOTH,
   });
 
-/** Folder cards only show at the root and outside a search. */
-export const visibleFolders = (): FolderType[] =>
+export const visibleFolders = (): FolderDto[] =>
   app.search.trim() || app.folderId !== null ? [] : folders();
 
 export const emptyMessage = (): string => {
@@ -199,11 +154,15 @@ export const openAccount = (steamId: string, signIn = false): void => {
   app.steamGuardOpen = true;
 };
 
-export const applySnapshot = (snapshot: SnapshotType): void => {
-  if ((snapshot.revision ?? 0) < (app.snapshot?.revision ?? 0)) return;
+export const applySnapshot = (snapshot: SnapshotDto): void => {
+  if (snapshot.revision < (app.snapshot?.revision ?? 0)) return;
   app.snapshot = snapshot;
   app.updateCheckedAt = Math.max(app.updateCheckedAt, snapshot.settings.last_update_check_at ?? 0);
-  applyLanguage(snapshot.settings.language ?? Language.AUTO, snapshot.settings.resolved_language);
+  // ! Wire values from the backend: plain strings restricted to `Language`/`ResolvedLanguageType` members.
+  applyLanguage(
+    snapshot.settings.language as Language,
+    snapshot.settings.resolved_language as ResolvedLanguageType,
+  );
   if (app.folderId !== null && !snapshot.folders.some((folder) => folder.id === app.folderId)) {
     app.folderId = null;
   }
@@ -211,8 +170,9 @@ export const applySnapshot = (snapshot: SnapshotType): void => {
 
 export type RunOptionsType = {
   busy?: string;
-  success?: MessageType;
+  success?: { title: string; description?: MessageType } | null;
   account?: ToastAccountType | null;
+  folder?: ToastFolderType | null;
 };
 
 export const run = async <K extends keyof CommandsType>(
@@ -234,11 +194,19 @@ export const run = async <K extends keyof CommandsType>(
       applySnapshot(result);
     }
     if (options.success) {
-      showToast(options.success, true, account);
+      toast(ToastKind.SUCCESS, options.success.title, {
+        description: options.success.description,
+        account,
+        folder: options.folder,
+      });
     }
     return result;
-  } catch (error) {
-    showToast(errorMessage(error), false, account);
+  } catch (e: unknown) {
+    toast(ToastKind.ERROR, t.action_failed_title(), {
+      description: errorMessage(e),
+      account,
+      folder: options.folder,
+    });
     return null;
   } finally {
     if (options.busy) {
@@ -247,7 +215,7 @@ export const run = async <K extends keyof CommandsType>(
   }
 };
 
-export const isSnapshot = (value: unknown): value is SnapshotType => {
+export const isSnapshot = (value: unknown): value is SnapshotDto => {
   return (
     typeof value === "object" &&
     value !== null &&

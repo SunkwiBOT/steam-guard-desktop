@@ -8,5 +8,8 @@
   "tray_locked": "Valvet är låst",
   "tray_no_accounts": "Inga konton",
   "tray_open": "Öppna",
-  "tray_quit": "Avsluta"
+  "tray_quit": "Avsluta",
+  "exit_blocked_link_in_flight": "Steam Guard Desktop kan inte stängas medan en Steam-koppling pågår. Slutför eller avbryt den först.",
+  "database_open_failed_body": "Programmets databas kunde inte öppnas (%{code}).\n\nPlats: %{path}\n\nFilen lämnades orörd. Åtgärda problemet (diskutrymme, behörigheter eller kör motsvarande appversion) och starta om.",
+  "database_recovered_notice": "Vid start hittades en skadad databasfil som flyttades undan som \"%{backup}\". En ny, tom databas skapades; lägg till dina konton igen, eller försök återställa den gamla filen manuellt."
 }

@@ -7,20 +7,46 @@ use crate::state::{lock_authenticator, AppState};
 
 pub const TRAY_ID: &str = "steam-guard-desktop-tray";
 const ACCOUNT_PREFIX: &str = "account:";
-/// Index of the first account entry: after Open and the first separator.
 const ACCOUNTS_POSITION: usize = 2;
 
-/// ! Tauri can only replace a tray menu on Windows and macOS; on Linux the
-/// existing menu must be edited in place, so its handle is kept.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum MenuId {
+    Open,
+    Quit,
+    Empty,
+    Locked,
+}
+
+impl MenuId {
+    const fn as_str(self) -> &'static str {
+        match self {
+            Self::Open => "open",
+            Self::Quit => "quit",
+            Self::Empty => "empty",
+            Self::Locked => "locked",
+        }
+    }
+
+    fn from_str(id: &str) -> Option<Self> {
+        match id {
+            "open" => Some(Self::Open),
+            "quit" => Some(Self::Quit),
+            "empty" => Some(Self::Empty),
+            "locked" => Some(Self::Locked),
+            _ => None,
+        }
+    }
+}
+
+// ! Tauri can only replace a tray menu on Windows and macOS, so on Linux its handle is kept to edit it in place.
 pub struct TrayMenu(pub Mutex<Option<Menu<tauri::Wry>>>);
 
-/// Reports whether the icon exists: the window must not hide without one.
 pub fn install(app: &AppHandle) -> tauri::Result<bool> {
     let menu = build_menu(app)?;
     app.manage(TrayMenu(Mutex::new(Some(menu.clone()))));
 
     let mut builder = TrayIconBuilder::with_id(TRAY_ID)
-        .tooltip("Steam Guard Desktop")
+        .tooltip(crate::APP_NAME)
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| handle_menu_event(app, event.id().as_ref()))
@@ -52,7 +78,7 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     MenuBuilder::new(app)
         .item(&MenuItem::with_id(
             app,
-            "open",
+            MenuId::Open.as_str(),
             rust_i18n::t!("tray_open", locale = locale),
             true,
             None::<&str>,
@@ -60,7 +86,7 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
         .separator()
         .item(&MenuItem::with_id(
             app,
-            "empty",
+            MenuId::Empty.as_str(),
             rust_i18n::t!("tray_no_accounts", locale = locale),
             false,
             None::<&str>,
@@ -68,7 +94,7 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
         .separator()
         .item(&MenuItem::with_id(
             app,
-            "quit",
+            MenuId::Quit.as_str(),
             rust_i18n::t!("tray_quit", locale = locale),
             true,
             None::<&str>,
@@ -76,10 +102,7 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
         .build()
 }
 
-/// ! Queued on the main thread, never awaited: menu calls block until the main
-/// thread runs them, so a caller holding a lock (the lock loop, a command
-/// holding AppState) would deadlock against a main-thread handler waiting for
-/// that same lock.
+// ! Queued on the main thread, never awaited: a caller holding a lock would deadlock against a main-thread handler waiting for that same lock.
 pub fn refresh_menu(app: &AppHandle) {
     let handle = app.clone();
     let _ = app.run_on_main_thread(move || update_menu(&handle));
@@ -103,16 +126,19 @@ fn update_menu(app: &AppHandle) {
     for (index, item) in items.iter().enumerate().rev() {
         let id = item.id().as_ref().to_string();
         if let tauri::menu::MenuItemKind::MenuItem(item) = item {
-            let key = match id.as_str() {
-                "open" => Some("tray_open"),
-                "quit" => Some("tray_quit"),
+            let key = match MenuId::from_str(&id) {
+                Some(MenuId::Open) => Some("tray_open"),
+                Some(MenuId::Quit) => Some("tray_quit"),
                 _ => None,
             };
             if let Some(key) = key {
                 let _ = item.set_text(rust_i18n::t!(key, locale = locale));
             }
         }
-        if id.starts_with(ACCOUNT_PREFIX) || id == "empty" || id == "locked" {
+        if id.starts_with(ACCOUNT_PREFIX)
+            || MenuId::from_str(&id) == Some(MenuId::Empty)
+            || MenuId::from_str(&id) == Some(MenuId::Locked)
+        {
             let _ = menu.remove_at(index);
         }
     }
@@ -131,7 +157,7 @@ fn update_menu(app: &AppHandle) {
     };
     if list.accounts.is_empty() {
         insert(
-            "empty".to_string(),
+            MenuId::Empty.as_str().to_string(),
             rust_i18n::t!("tray_no_accounts", locale = locale).to_string(),
             false,
         );
@@ -139,7 +165,7 @@ fn update_menu(app: &AppHandle) {
     }
     if list.vault.locked {
         insert(
-            "locked".to_string(),
+            MenuId::Locked.as_str().to_string(),
             rust_i18n::t!("tray_locked", locale = locale).to_string(),
             false,
         );
@@ -154,19 +180,20 @@ fn update_menu(app: &AppHandle) {
 }
 
 fn handle_menu_event(app: &AppHandle, id: &str) {
-    match id {
-        "open" => crate::show_main_window(app),
-        "quit" => app.exit(0),
-        other if other.starts_with(ACCOUNT_PREFIX) => {
-            let steam_id = other[ACCOUNT_PREFIX.len()..].to_string();
-            copy_code(app, &steam_id);
-        }
-        _ => {}
+    match MenuId::from_str(id) {
+        Some(MenuId::Open) => crate::show_main_window(app),
+        Some(MenuId::Quit) => crate::state::request_exit(app),
+        _ => match id {
+            other if other.starts_with(ACCOUNT_PREFIX) => {
+                let steam_id = other[ACCOUNT_PREFIX.len()..].to_string();
+                copy_code(app, &steam_id);
+            }
+            _ => {}
+        },
     }
 }
 
-/// Copies the current code; a vault that locked since the menu was built
-/// cannot produce one, so the window is shown instead. The code is never logged.
+// ! Never logs the copied code.
 fn copy_code(app: &AppHandle, steam_id: &str) {
     let code = {
         let state = app.state::<AppState>();

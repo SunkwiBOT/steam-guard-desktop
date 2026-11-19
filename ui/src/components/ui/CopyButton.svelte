@@ -4,7 +4,9 @@
   import { t } from "../../lib/i18n/i18n.svelte";
 
   import { copyFeedback, copyValue } from "../../lib/state/clipboard.svelte";
-  import { accountById, showToast } from "../../lib/state/state.svelte";
+  import { accountById } from "../../lib/state/state.svelte";
+  import { ToastKind } from "../../lib/state/state.constants";
+  import { toast } from "../../lib/state/toasts";
   import CopyIndicator from "./CopyIndicator.svelte";
 
   type CopyButtonPropsType = {
@@ -48,8 +50,8 @@
         const value = await read();
         if (key === copyKey) await copyValue(value, key, valueLabel, account);
       }
-    } catch (cause) {
-      showToast(errorMessage(cause), false, account);
+    } catch (e: unknown) {
+      toast(ToastKind.ERROR, t.action_failed_title(), { description: errorMessage(e), account });
     } finally {
       pending = false;
     }

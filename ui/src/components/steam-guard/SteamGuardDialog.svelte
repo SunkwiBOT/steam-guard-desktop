@@ -1,7 +1,8 @@
 <script lang="ts">
   import DialogHeader from "../dialogs/DialogHeader.svelte";
-  import { focusTrap } from "../../lib/actions/focus-trap";
-  import { errorMessage } from "../../lib/errors/errors.svelte";
+  import AppDialog from "../dialogs/AppDialog.svelte";
+  import { DialogContent } from "$lib/components/ui/dialog/index.js";
+  import { errorMessage, vaultErrorHint } from "../../lib/errors/errors.svelte";
   import { t, rich } from "../../lib/i18n/i18n.svelte";
 
   import {
@@ -9,25 +10,15 @@
     SteamGuardScreen,
     SteamGuardField,
   } from "../../lib/steam-guard/steam-guard.constants";
-  import {
-    ChevronDown,
-    Folder,
-    Hourglass,
-    KeyRound,
-    Lock,
-    Palette,
-    Play,
-    Settings,
-    X,
-  } from "@lucide/svelte";
+  import { Folder, Hourglass, KeyRound, Lock, Palette, Play, Settings, X } from "@lucide/svelte";
   import { app, folderById, folders } from "../../lib/state/state.svelte";
   import { moveToFolder, setAccountColor } from "../../lib/actions/actions.svelte";
-  import { dropdown, openDropdown } from "../../lib/state/menus.svelte";
   import ColorSwatches from "../folders/ColorSwatches.svelte";
   import { createSteamGuardController } from "../../lib/steam-guard/steam-guard.svelte";
   import ActionButton from "../ui/ActionButton.svelte";
   import MessageText from "../ui/MessageText.svelte";
   import FormError from "../ui/FormError.svelte";
+  import SelectSetting from "../ui/SelectSetting.svelte";
   import SteamGuardCode from "./SteamGuardCode.svelte";
   import SteamGuardIcon from "./SteamGuardIcon.svelte";
   import AccountIdentity from "../accounts/AccountIdentity.svelte";
@@ -43,36 +34,16 @@
   const folderName = $derived(
     (entry?.folder_id && folderById(entry.folder_id)?.name) || t.folder_none(),
   );
-  let folderButton = $state<HTMLButtonElement | null>(null);
 
-  const pickFolder = (): void => {
-    if (!entry || !folderButton) return;
-    const account = entry;
-    openDropdown({
-      anchor: folderButton,
-      value: account.folder_id ?? "",
-      options: [
-        { value: "", label: t.folder_none() },
-        ...folders().map((item) => ({ value: item.id, label: item.name })),
-      ],
-      onSelect: (value) => void moveToFolder(account.steam_id, value || null),
-    });
-  };
   const uid = $props.id();
 </script>
 
-{#if app.steamGuardOpen && entry}
-  <div class="modal" inert={app.vaultOpen}>
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="modal-backdrop" onclick={controller.close}></div>
-    <div
-      class="dialog steamguard-dialog"
-      role="dialog"
-      aria-modal="true"
+{#if entry}
+  <AppDialog open={app.steamGuardOpen} onclose={controller.close}>
+    <DialogContent
+      showCloseButton={false}
+      class="sm:max-w-2xl max-h-[86vh] flex flex-col overflow-hidden"
       aria-labelledby={`${uid}-title`}
-      tabindex="-1"
-      use:focusTrap={{ onEscape: controller.close }}
     >
       <DialogHeader
         id={`${uid}-title`}
@@ -107,7 +78,7 @@
           </p>
           <p class="steamguard-error">
             {errorMessage(controller.vault.error)}
-            {t.vault_restore_hint()}
+            {vaultErrorHint(controller.vault.error)}
           </p>
         {:else if controller.vault.locked}
           <section class="steamguard-card">
@@ -183,19 +154,17 @@
           <section class="steamguard-card account-row">
             <div class="account-block">
               <h3 class="block-title"><Folder size={15} /> {t.folder_label()}</h3>
-              <button
-                class="select-button"
-                type="button"
-                aria-label={t.folder_label()}
-                aria-haspopup="listbox"
-                aria-expanded={dropdown.open && dropdown.anchor === folderButton}
-                bind:this={folderButton}
+              <SelectSetting
+                value={entry.folder_id ?? ""}
+                options={[
+                  { value: "", label: t.folder_none() },
+                  ...folders().map((item) => ({ value: item.id, label: item.name })),
+                ]}
+                label={folderName}
+                ariaLabel={t.folder_label()}
                 disabled={controller.busy}
-                onclick={pickFolder}
-              >
-                <span>{folderName}</span>
-                <span class="picker-caret"><ChevronDown size={14} /></span>
-              </button>
+                onselect={(value) => void moveToFolder(entry.steam_id, value || null)}
+              />
             </div>
             <div class="account-block">
               <h3 class="block-title"><Palette size={15} /> {t.account_colour()}</h3>
@@ -225,6 +194,6 @@
           onclick={controller.close}><X size={15} /> {t.common_close()}</button
         >
       </footer>
-    </div>
-  </div>
+    </DialogContent>
+  </AppDialog>
 {/if}

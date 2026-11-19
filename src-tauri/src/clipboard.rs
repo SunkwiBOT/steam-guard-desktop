@@ -1,5 +1,3 @@
-//! Native clipboard writes, independent of webview focus and user activation.
-
 use guard_core::error_code::ErrorCode;
 use tauri::AppHandle;
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -17,7 +15,7 @@ pub async fn clipboard_write_text(app: AppHandle, text: String) -> Result<(), St
     .await
 }
 
-/// Never logs the copied text: it may be a recovery or login code.
+// ! Never logs the copied text: it may be a recovery or login code.
 pub fn write_text(app: &AppHandle, text: String, action: &str) -> Result<(), String> {
     app.clipboard().write_text(text).map_err(|error| {
         crate::logging::write(&format!(

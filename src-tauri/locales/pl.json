@@ -8,5 +8,8 @@
   "tray_locked": "Sejf zablokowany",
   "tray_no_accounts": "Brak kont",
   "tray_open": "Otwórz",
-  "tray_quit": "Zakończ"
+  "tray_quit": "Zakończ",
+  "exit_blocked_link_in_flight": "Steam Guard Desktop nie może się zamknąć, gdy trwa łączenie ze Steam. Najpierw dokończ lub anuluj tę operację.",
+  "database_open_failed_body": "Nie można było otworzyć bazy danych aplikacji (%{code}).\n\nLokalizacja: %{path}\n\nPlik pozostał nienaruszony. Rozwiąż problem (miejsce na dysku, uprawnienia lub uruchom odpowiednią wersję aplikacji) i uruchom ponownie.",
+  "database_recovered_notice": "Podczas uruchamiania znaleziono uszkodzony plik bazy danych i odłożono go jako „%{backup}”. Utworzono nową, pustą bazę danych; dodaj swoje konta ponownie lub spróbuj ręcznie odzyskać stary plik."
 }

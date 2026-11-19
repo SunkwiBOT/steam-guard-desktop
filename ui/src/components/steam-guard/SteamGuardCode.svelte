@@ -4,6 +4,7 @@
   import { t } from "../../lib/i18n/i18n.svelte";
 
   import CopyButton from "../ui/CopyButton.svelte";
+  import MessageText from "../ui/MessageText.svelte";
   import { copySteamGuardCode } from "../../lib/actions/actions.svelte";
   import { app } from "../../lib/state/state.svelte";
   import { liveCode, watchCode } from "../../lib/steam-guard/codes.svelte";
@@ -37,7 +38,8 @@
   </p>
 {:else}
   <p class="steamguard-note">
-    {(code?.error && errorMessage(code.error)) ||
-      (paused ? t.guard_code_hidden() : t.guard_code_loading())}
+    {#if code?.error}<MessageText content={errorMessage(code.error)} />{:else}{paused
+        ? t.guard_code_hidden()
+        : t.guard_code_loading()}{/if}
   </p>
 {/if}

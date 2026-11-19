@@ -14,12 +14,16 @@ pub struct SettingsStore {
 }
 
 impl SettingsStore {
-    /// Reads the settings from the database. A database that cannot be read is kept
-    /// aside by `Database::open`, and the defaults are used for this run.
     pub fn load(database: Database) -> Self {
         let data = database
             .read("Read settings", read_settings)
-            .unwrap_or_default();
+            .unwrap_or_else(|error| {
+                crate::logging::write(&format!(
+                    "action=load_settings status=failed error={}",
+                    crate::logging::error_category(&error.to_string())
+                ));
+                Settings::default()
+            });
         Self { database, data }
     }
 
@@ -27,9 +31,6 @@ impl SettingsStore {
         &self.data
     }
 
-    /// Applies a change and writes it, putting the previous values back in
-    /// memory when the write fails so the interface never shows a change that
-    /// is not on disk.
     pub fn update(&mut self, change: impl FnOnce(&mut Settings)) -> Result<(), String> {
         let previous = self.data.clone();
         change(&mut self.data);
@@ -91,19 +92,16 @@ fn read_settings(connection: &Connection) -> rusqlite::Result<Settings> {
             .unwrap_or(defaults.vault_lock_interval),
         last_update_check_at: read_value::<Option<u64>>(connection, "last_update_check_at")
             .flatten(),
+        vault_offer_dismissed: read_value(connection, "vault_offer_dismissed")
+            .unwrap_or(defaults.vault_offer_dismissed),
         folders,
         account_folders: pairs("SELECT steam_id, folder_id FROM account_folder")?,
         account_colors: pairs("SELECT steam_id, color FROM account_color")?,
     })
 }
 
+// ! Upserts and removes only the absent rows instead of rewriting every table, so an interrupted save never erases folders or colours it did not touch.
 fn write_settings(transaction: &Transaction<'_>, settings: &Settings) -> rusqlite::Result<()> {
-    transaction.execute_batch(
-        "DELETE FROM setting;
-         DELETE FROM folder;
-         DELETE FROM account_folder;
-         DELETE FROM account_color;",
-    )?;
     put_setting(transaction, "language", &settings.language)?;
     put_setting(transaction, "close_to_tray", &settings.close_to_tray)?;
     put_setting(
@@ -125,9 +123,24 @@ fn write_settings(transaction: &Transaction<'_>, settings: &Settings) -> rusqlit
         "last_update_check_at",
         &settings.last_update_check_at,
     )?;
+    put_setting(
+        transaction,
+        "vault_offer_dismissed",
+        &settings.vault_offer_dismissed,
+    )?;
+
+    prune_missing(
+        transaction,
+        "folder",
+        "id",
+        settings.folders.iter().map(|folder| folder.id.as_str()),
+    )?;
     for (position, folder) in settings.folders.iter().enumerate() {
         transaction.execute(
-            "INSERT INTO folder (id, position, name, color, icon) VALUES (?1, ?2, ?3, ?4, ?5)",
+            "INSERT INTO folder (id, position, name, color, icon) VALUES (?1, ?2, ?3, ?4, ?5)
+             ON CONFLICT(id) DO UPDATE SET
+               position = excluded.position, name = excluded.name,
+               color = excluded.color, icon = excluded.icon",
             (
                 &folder.id,
                 position as i64,
@@ -137,22 +150,58 @@ fn write_settings(transaction: &Transaction<'_>, settings: &Settings) -> rusqlit
             ),
         )?;
     }
+
+    prune_missing(
+        transaction,
+        "account_folder",
+        "steam_id",
+        settings.account_folders.keys().map(String::as_str),
+    )?;
     for (steam_id, folder_id) in &settings.account_folders {
         transaction.execute(
-            "INSERT INTO account_folder (steam_id, folder_id) VALUES (?1, ?2)",
+            "INSERT INTO account_folder (steam_id, folder_id) VALUES (?1, ?2)
+             ON CONFLICT(steam_id) DO UPDATE SET folder_id = excluded.folder_id",
             (steam_id, folder_id),
         )?;
     }
+
+    prune_missing(
+        transaction,
+        "account_color",
+        "steam_id",
+        settings.account_colors.keys().map(String::as_str),
+    )?;
     for (steam_id, color) in &settings.account_colors {
         transaction.execute(
-            "INSERT INTO account_color (steam_id, color) VALUES (?1, ?2)",
+            "INSERT INTO account_color (steam_id, color) VALUES (?1, ?2)
+             ON CONFLICT(steam_id) DO UPDATE SET color = excluded.color",
             (steam_id, color),
         )?;
     }
     Ok(())
 }
 
-/// Each preference is stored as its JSON text, so the enums keep their serde names.
+fn prune_missing<'a>(
+    transaction: &Transaction<'_>,
+    table: &str,
+    key_column: &str,
+    kept: impl Iterator<Item = &'a str>,
+) -> rusqlite::Result<()> {
+    let existing: Vec<String> = transaction
+        .prepare(&format!("SELECT {key_column} FROM {table}"))?
+        .query_map([], |row| row.get(0))?
+        .collect::<rusqlite::Result<_>>()?;
+    let kept: std::collections::HashSet<&str> = kept.collect();
+    for key in existing.iter().filter(|key| !kept.contains(key.as_str())) {
+        transaction.execute(
+            &format!("DELETE FROM {table} WHERE {key_column} = ?1"),
+            [key],
+        )?;
+    }
+    Ok(())
+}
+
+// ! Each preference is stored as its JSON text, so the enums keep their serde names.
 fn put_setting<T: Serialize>(
     transaction: &Transaction<'_>,
     key: &str,
@@ -160,7 +209,8 @@ fn put_setting<T: Serialize>(
 ) -> rusqlite::Result<()> {
     let text = serde_json::to_string(value).unwrap_or_default();
     transaction.execute(
-        "INSERT INTO setting (key, value) VALUES (?1, ?2)",
+        "INSERT INTO setting (key, value) VALUES (?1, ?2)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value",
         (key, text),
     )?;
     Ok(())

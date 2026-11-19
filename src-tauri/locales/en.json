@@ -8,5 +8,8 @@
   "tray_locked": "Vault locked",
   "tray_no_accounts": "No accounts",
   "tray_open": "Open",
-  "tray_quit": "Quit"
+  "tray_quit": "Quit",
+  "exit_blocked_link_in_flight": "Steam Guard Desktop cannot close while a Steam link is in progress. Finish or cancel it first.",
+  "database_open_failed_body": "The application database could not be opened (%{code}).\n\nLocation: %{path}\n\nThe file was left untouched. Fix the problem (free disk space, permissions, or run the matching app version) and restart.",
+  "database_recovered_notice": "A corrupted database file was found at startup and moved aside as \"%{backup}\". A new, empty database was created; add your accounts again, or try to recover the old file manually."
 }

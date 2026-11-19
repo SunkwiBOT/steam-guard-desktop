@@ -8,5 +8,8 @@
   "tray_locked": "Holvi lukittu",
   "tray_no_accounts": "Ei tilejä",
   "tray_open": "Avaa",
-  "tray_quit": "Lopeta"
+  "tray_quit": "Lopeta",
+  "exit_blocked_link_in_flight": "Steam Guard Desktop ei voi sulkeutua, kun Steam-liittäminen on kesken. Viimeistele tai peruuta se ensin.",
+  "database_open_failed_body": "Sovelluksen tietokantaa ei voitu avata (%{code}).\n\nSijainti: %{path}\n\nTiedosto jätettiin koskemattomaksi. Korjaa ongelma (levytila, käyttöoikeudet tai käynnistä vastaava sovellusversio) ja käynnistä uudelleen.",
+  "database_recovered_notice": "Käynnistyksessä löytyi vioittunut tietokantatiedosto, joka siirrettiin sivuun nimellä \"%{backup}\". Uusi, tyhjä tietokanta luotiin; lisää tilisi uudelleen tai yritä palauttaa vanha tiedosto manuaalisesti."
 }

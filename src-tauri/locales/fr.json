@@ -8,5 +8,8 @@
   "tray_locked": "Coffre verrouillé",
   "tray_no_accounts": "Aucun compte",
   "tray_open": "Ouvrir",
-  "tray_quit": "Quitter"
+  "tray_quit": "Quitter",
+  "exit_blocked_link_in_flight": "Steam Guard Desktop ne peut pas se fermer pendant une liaison Steam en cours. Terminez-la ou annulez-la d'abord.",
+  "database_open_failed_body": "La base de données de l'application n'a pas pu être ouverte (%{code}).\n\nEmplacement : %{path}\n\nLe fichier a été laissé intact. Corrigez le problème (espace disque, permissions, ou lancez la version correspondante) puis redémarrez.",
+  "database_recovered_notice": "Un fichier de base de données corrompu a été trouvé au démarrage et déplacé sous le nom « %{backup} ». Une nouvelle base de données vide a été créée ; ajoutez de nouveau vos comptes, ou essayez de récupérer manuellement l'ancien fichier."
 }

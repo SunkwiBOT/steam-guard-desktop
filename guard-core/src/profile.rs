@@ -1,6 +1,4 @@
-//! Public Steam community profile (persona name and avatar), fetched without
-//! an API key and cached in the `profile` table so the cards can show it while
-//! the vault is locked or the machine is offline.
+// ! Fetched from Steam's public community profile page, which needs no API key.
 
 use crate::authenticator::USER_AGENT;
 use crate::error::Result;
@@ -19,7 +17,6 @@ const DEFAULT_AVATAR_MIME: &str = "image/jpeg";
 pub struct Profile {
     pub steam_id: u64,
     pub persona_name: String,
-    /// Image bytes and their MIME type.
     pub avatar: Option<(Vec<u8>, String)>,
     pub fetched_at: u64,
 }
@@ -43,9 +40,7 @@ struct Parsed {
     avatar_url: Option<String>,
 }
 
-/// Steam answers `?xml=1` with `<profile>` for a known id and `<response>`
-/// holding an `<error>` otherwise. A private profile still carries its name
-/// and avatar, which is all that is read, so privacy is not an error here.
+// ! Steam answers `?xml=1` with `<profile>` for a known id, `<response>`/`<error>` otherwise; a private profile still exposes name and avatar there.
 fn parse(text: &str) -> std::result::Result<Parsed, ProfileError> {
     let document = roxmltree::Document::parse(text).map_err(|_| ProfileError::Invalid)?;
     let root = document.root_element();
@@ -102,8 +97,6 @@ fn read_limited(
     Ok((bytes, mime))
 }
 
-/// Blocking: runs on a worker thread. A missing or oversized avatar leaves
-/// `avatar` empty rather than failing the whole fetch.
 pub fn fetch(steam_id: u64) -> std::result::Result<Profile, ProfileError> {
     let client = client()?;
     let response = client
@@ -131,7 +124,6 @@ pub fn fetch(steam_id: u64) -> std::result::Result<Profile, ProfileError> {
     })
 }
 
-/// Cloning shares the same database connection.
 #[derive(Debug, Clone)]
 pub struct ProfileStore {
     database: Database,

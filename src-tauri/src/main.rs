@@ -1,31 +1,25 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod auth_commands;
-mod base64;
-mod clipboard;
-mod commands;
-mod locale;
-mod log_commands;
-mod logging;
-mod settings;
-mod state;
-mod tray;
-
 use std::time::Duration;
 
+use steam_guard_desktop_lib::{
+    auth_commands, clipboard, commands, log_commands, logging, open_url, settings,
+    show_main_window, state, tray,
+};
 use tauri::{AppHandle, Emitter, Manager, WindowEvent};
 
-use crate::state::AppState;
-
-rust_i18n::i18n!("locales", fallback = "en");
+use state::AppState;
 
 fn main() {
+    // ! This flag exits before any window, lock file or database is touched, so a self-update check never collides with the running instance.
+    if std::env::args().any(|arg| arg == commands::updates::SELFTEST_ARG) {
+        std::process::exit(0);
+    }
     prepare_linux_display();
-    // Before the state is built, so a database that cannot be opened leaves a
-    // trace instead of failing silently.
+    // ! Before the state is built, so a database that cannot be opened leaves a trace.
     logging::init(settings::config_dir());
 
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
             show_main_window(app);
         }))
@@ -37,7 +31,6 @@ fn main() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
-        .manage(AppState::new())
         .manage(commands::updates::PendingUpdate::new())
         .invoke_handler(tauri::generate_handler![
             commands::snapshots::snapshot,
@@ -51,6 +44,7 @@ fn main() {
             commands::preferences::set_steam_ids_visible,
             commands::preferences::set_blur_codes,
             commands::preferences::set_search_scope,
+            commands::preferences::set_vault_offer_dismissed,
             commands::preferences::create_folder,
             commands::preferences::update_folder,
             commands::preferences::delete_folder,
@@ -58,7 +52,6 @@ fn main() {
             commands::preferences::set_account_color,
             commands::preferences::set_folder_color,
             commands::preferences::set_folder_icon,
-            commands::preferences::set_window_active,
             commands::preferences::autostart_status,
             commands::preferences::set_autostart,
             commands::updates::check_for_update,
@@ -67,9 +60,9 @@ fn main() {
             commands::profiles::profile_refresh,
             log_commands::logs_snapshot,
             log_commands::logs_open_directory,
+            log_commands::log_frontend_error,
+            open_url::open_url,
             clipboard::clipboard_write_text,
-            auth_commands::vault::authenticator_status,
-            auth_commands::vault::authenticator_accounts,
             auth_commands::vault::authenticator_unlock,
             auth_commands::vault::authenticator_lock,
             auth_commands::vault::authenticator_set_passphrase,
@@ -94,12 +87,19 @@ fn main() {
             auth_commands::link::steam_guard_link_transfer_finish,
             auth_commands::link::steam_guard_link_revoke,
             auth_commands::link::steam_guard_link_cancel,
+            auth_commands::files::steam_guard_clear_picked_file,
+            commands::snapshots::default_settings,
+            frontend_ready,
         ])
         .setup(|app| {
             let previous_panic_hook = std::panic::take_hook();
             std::panic::set_hook(Box::new(move |info| {
-                // ! Panic payloads can contain secrets: never write them to the log.
-                logging::write("runtime: panic");
+                // ! Panic payloads can contain secrets: only where it happened is logged.
+                let location = info
+                    .location()
+                    .map(|location| location.to_string())
+                    .unwrap_or_else(|| "unknown".to_string());
+                logging::write(&format!("runtime: panic location={location}"));
                 previous_panic_hook(info);
             }));
             logging::write(&format!(
@@ -126,6 +126,21 @@ fn main() {
                     vault.error.is_some()
                 ));
             }
+            {
+                let state = app.state::<AppState>();
+                if let Some(backup) = state.take_corrupt_db_backup() {
+                    let locale = state.settings().language.resolved();
+                    let message = state::database_recovered_message(locale, &backup);
+                    // ! Non-blocking: `setup` runs inside tao's event loop, which owns the GLib idle dispatch a blocking rfd dialog needs.
+                    use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
+                    app.dialog()
+                        .message(message)
+                        .title(steam_guard_desktop_lib::APP_NAME)
+                        .kind(MessageDialogKind::Warning)
+                        .buttons(MessageDialogButtons::Ok)
+                        .show(|_| {});
+                }
+            }
             if let Some(window) = app.get_webview_window("main") {
                 configure_window(&window);
             }
@@ -142,39 +157,39 @@ fn main() {
             start_vault_lock_loop(app.handle().clone());
             Ok(())
         })
-        .on_window_event(|window, event| match event {
-            WindowEvent::CloseRequested { api, .. } => {
-                let state = window.app_handle().state::<AppState>();
+        .on_window_event(|window, event| {
+            if let WindowEvent::CloseRequested { api, .. } = event {
+                let app = window.app_handle();
+                let state = app.state::<AppState>();
                 let close_to_tray = state.settings().close_to_tray;
-                // Hiding without a tray icon would leave the app unreachable.
                 if state.tray_available() && close_to_tray {
                     api.prevent_close();
-                    state.set_window_active(false);
                     let _ = window.hide();
                 } else {
-                    window.app_handle().exit(0);
+                    state::request_close(app, api);
                 }
             }
-            WindowEvent::Focused(focused) => {
-                window
-                    .app_handle()
-                    .state::<AppState>()
-                    .set_window_active(*focused);
-            }
-            _ => {}
         })
         .build(tauri::generate_context!())
-        .expect("failed to build the Steam Guard Desktop window")
-        .run(|_app_handle, event| {
-            if matches!(event, tauri::RunEvent::Exit) {
-                logging::write("exit: normal");
-            }
-        });
+        .expect("failed to build the main window");
+
+    // ! Built, so the single-instance plugin has already exited a second launch and no window
+    // exists yet: a database that cannot be opened can show a blocking dialog safely here.
+    app.manage(AppState::new());
+
+    app.run(|app_handle, event| match event {
+        tauri::RunEvent::Exit => logging::write("exit: normal"),
+        // ! Closing every window on macOS leaves the app running in the Dock, and a Dock click raises it again.
+        #[cfg(target_os = "macos")]
+        tauri::RunEvent::Reopen { .. } => show_main_window(app_handle),
+        tauri::RunEvent::ExitRequested { api, .. } if state::exit_blocked(app_handle) => {
+            api.prevent_exit();
+        }
+        _ => {}
+    });
 }
 
-/// ! Sets the icon, the X11 `WM_CLASS` and the Wayland `app_id`: without them
-/// the compositor cannot pair the window with the installed `.desktop` entry
-/// and shows a generic placeholder icon.
+// ! Without the icon, X11 `WM_CLASS` and Wayland `app_id`, the compositor cannot pair the window with the installed `.desktop` entry.
 fn configure_window(window: &tauri::WebviewWindow) {
     if let Ok(icon) = tauri::image::Image::from_bytes(include_bytes!("../icons/128x128.png")) {
         let _ = window.set_icon(icon);
@@ -184,17 +199,12 @@ fn configure_window(window: &tauri::WebviewWindow) {
     gtk::Window::set_default_icon_name("steamguard");
 }
 
-/// ! WebKitGTK's DMABUF renderer fails on Wayland with the NVIDIA driver, so it
-/// is disabled in that case only; GTK still picks Wayland or X11 on its own.
+// ! WebKitGTK's DMABUF renderer fails on Wayland with the NVIDIA driver, so it is disabled in that case only.
 #[cfg(target_os = "linux")]
 fn prepare_linux_display() {
-    // ! Before GTK starts: the Wayland app id is the program name, and KWin
-    // looks up "<app id>.desktop" for the window icon. The bundler names that
-    // entry after the product name, so the two must be identical. The icon
-    // name stays "steamguard": a "steam-" prefix would resolve to the Steam
-    // client's icon in some themes.
-    glib::set_prgname(Some("Steam Guard Desktop"));
-    glib::set_application_name("Steam Guard Desktop");
+    // ! Before GTK starts: KWin looks up `<app id>.desktop` for the window icon and the bundler names that entry after the product name; the icon name stays `steamguard` because a `steam-` prefix resolves to the Steam client's icon in some themes.
+    glib::set_prgname(Some(steam_guard_desktop_lib::APP_NAME));
+    glib::set_application_name(steam_guard_desktop_lib::APP_NAME);
 
     if std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_some() {
         return;
@@ -213,34 +223,6 @@ fn prepare_linux_display() {
 #[cfg(not(target_os = "linux"))]
 fn prepare_linux_display() {}
 
-pub fn show_main_window(app: &AppHandle) {
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.show();
-        let _ = window.unminimize();
-        let _ = window.set_focus();
-
-        // ! Wayland refuses focus changes from an unfocused application, so a
-        // tray click would only raise the window: present() asks properly.
-        #[cfg(target_os = "linux")]
-        {
-            if let Ok(gtk_window) = window.gtk_window() {
-                use gtk::prelude::GtkWindowExt;
-                gtk_window.present();
-            }
-        }
-
-        let _ = window.set_always_on_top(true);
-        let handle = window.clone();
-        std::thread::spawn(move || {
-            std::thread::sleep(std::time::Duration::from_millis(700));
-            let _ = handle.set_always_on_top(false);
-            let _ = handle.set_focus();
-        });
-    }
-}
-
-/// The idle deadline is checked in the background too, so a hidden window
-/// never keeps the vault open past its interval.
 fn start_vault_lock_loop(app: AppHandle) {
     std::thread::spawn(move || loop {
         std::thread::sleep(Duration::from_secs(15));
@@ -249,4 +231,43 @@ fn start_vault_lock_loop(app: AppHandle) {
             tray::refresh_menu(&app);
         }
     });
+}
+
+// ! Re-measured every `CLOCK_OFFSET_TTL`: a session running for hours must not keep trusting a stale measurement.
+const CLOCK_OFFSET_TTL: Duration = Duration::from_secs(15 * 60);
+// ! A measurement that failed (e.g. network not up yet at startup) is retried sooner than a successful one.
+const CLOCK_OFFSET_RETRY_TTL: Duration = Duration::from_secs(30);
+const CLOCK_DRIFT_THRESHOLD_SECONDS: i64 = 60;
+
+fn start_clock_offset_loop(app: AppHandle) {
+    std::thread::spawn(move || loop {
+        // ! Measured with no lock held: `measure_time_offset` makes the HTTP call itself.
+        let result = guard_core::authenticator::measure_time_offset();
+        let sleep_for = match result {
+            Ok(offset) => {
+                let authenticator = app.state::<AppState>().authenticator();
+                state::lock_authenticator(&authenticator).set_time_offset(offset);
+                logging::write(&format!("clock: steam_offset_seconds={offset}"));
+                let _ = app.emit("clock-offset-measured", offset);
+                if offset.abs() > CLOCK_DRIFT_THRESHOLD_SECONDS {
+                    let _ = app.emit("clock-drift-warning", offset);
+                }
+                CLOCK_OFFSET_TTL
+            }
+            Err(error) => {
+                logging::write(&format!("clock: steam_offset_unavailable code={error}"));
+                CLOCK_OFFSET_RETRY_TTL
+            }
+        };
+        std::thread::sleep(sleep_for);
+    });
+}
+
+// ! Called by the page once it registered its `clock-offset-measured` and `clock-drift-warning`
+// listeners, so the first measurement cannot fire before anything listens.
+#[tauri::command(async)]
+fn frontend_ready(app: AppHandle) {
+    if app.state::<AppState>().mark_frontend_ready() {
+        start_clock_offset_loop(app);
+    }
 }

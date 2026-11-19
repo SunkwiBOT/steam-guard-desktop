@@ -5,10 +5,10 @@
 
   import ActionButton from "../ui/ActionButton.svelte";
   import type { SteamGuardControllerType } from "../../lib/steam-guard/steam-guard.svelte";
-  import type { AccountType } from "../../lib/types";
+  import type { AccountDto } from "../../lib/bindings/AccountDto";
   import { Download, Lock, RefreshCw, ShieldOff, Trash2, UserRound } from "@lucide/svelte";
   import RevocationCode from "./RevocationCode.svelte";
-  type SteamGuardSecurityPropsType = { controller: SteamGuardControllerType; entry: AccountType };
+  type SteamGuardSecurityPropsType = { controller: SteamGuardControllerType; entry: AccountDto };
 
   let { controller, entry }: SteamGuardSecurityPropsType = $props();
 </script>

@@ -1,90 +1,34 @@
 <script lang="ts">
   import { Language, LANGUAGE_LABELS, RESOLVED_LANGUAGES } from "../../lib/i18n/i18n.constants";
   import { SearchScope, UpdateInterval } from "../../lib/state/state.constants";
-  import { locale, t } from "../../lib/i18n/i18n.svelte";
-  import { dropdown, openDropdown } from "../../lib/state/menus.svelte";
-  import { checkForUpdateIfDue } from "../../lib/actions/actions.svelte";
+  import { t } from "../../lib/i18n/i18n.svelte";
 
-  import { app, EMPTY_SETTINGS, run, showToast } from "../../lib/state/state.svelte";
-  import { invoke } from "../../lib/api/tauri";
-  import type { SettingsType } from "../../lib/types";
-  import AsyncIcon from "../ui/AsyncIcon.svelte";
+  import { settingsAutostartAvailable, settingsDraft } from "../../lib/state/settings-draft.svelte";
   import SettingToggle from "./SettingToggle.svelte";
+  import SelectSetting from "../ui/SelectSetting.svelte";
 
-  import { ChevronDown, Download, Eye, Languages, Power, Search } from "@lucide/svelte";
+  import { Download, Eye, Languages, Power, Search } from "@lucide/svelte";
 
-  const settings = $derived<SettingsType>(app.snapshot?.settings ?? EMPTY_SETTINGS);
+  const draft = $derived(settingsDraft.value);
 
-  let autostartEnabled = $state(false);
-  let autostartAvailable = $state(true);
-  let languageBusy = $state(false);
-  let languageButton = $state<HTMLButtonElement | null>(null);
   const languageOptions = $derived([
     { value: Language.AUTO, label: t.language_system() },
     ...RESOLVED_LANGUAGES.map((value) => ({ value, label: LANGUAGE_LABELS[value] })),
   ]);
   const languageLabel = $derived(
-    languageOptions.find((option) => option.value === locale.preference)?.label ??
+    languageOptions.find((option) => option.value === draft?.language)?.label ??
       t.language_system(),
   );
 
-  const changeLanguage = async (language: Language): Promise<void> => {
-    if (languageBusy || language === locale.preference) return;
-    languageBusy = true;
-    try {
-      await run("set_language", { language });
-    } finally {
-      languageBusy = false;
-    }
-  };
-
-  const pickLanguage = (): void => {
-    if (!languageButton || languageBusy) return;
-    openDropdown({
-      anchor: languageButton,
-      value: locale.preference,
-      options: languageOptions,
-      onSelect: (value) => {
-        const language = Object.values(Language).find((choice) => choice === value);
-        if (language) void changeLanguage(language);
-      },
-    });
-  };
-
-  let searchBusy = $state(false);
-  let searchButton = $state<HTMLButtonElement | null>(null);
   const searchScopes = $derived([
     { value: SearchScope.BOTH, label: t.settings_search_both() },
     { value: SearchScope.DISPLAY_NAME, label: t.settings_search_display_name() },
     { value: SearchScope.IDENTIFIER, label: t.settings_search_identifier() },
   ]);
   const searchScopeLabel = $derived(
-    searchScopes.find((option) => option.value === settings.search_scope)?.label ??
+    searchScopes.find((option) => option.value === draft?.searchScope)?.label ??
       t.settings_search_both(),
   );
-
-  const changeSearchScope = async (scope: SearchScope): Promise<void> => {
-    if (searchBusy || scope === settings.search_scope) return;
-    searchBusy = true;
-    try {
-      await run("set_search_scope", { scope });
-    } finally {
-      searchBusy = false;
-    }
-  };
-
-  const pickSearchScope = (): void => {
-    if (!searchButton || searchBusy) return;
-    openDropdown({
-      anchor: searchButton,
-      value: settings.search_scope,
-      options: searchScopes,
-      onSelect: (value) => {
-        const scope = Object.values(SearchScope).find((choice) => choice === value);
-        if (scope) void changeSearchScope(scope);
-      },
-    });
-  };
 
   const intervals = $derived([
     { value: UpdateInterval.NEVER, label: t.updates_check_never() },
@@ -97,162 +41,100 @@
     { value: UpdateInterval.ONE_WEEK, label: t.updates_check_weekly() },
   ]);
   const intervalLabel = $derived(
-    intervals.find((option) => option.value === settings.update_interval)?.label ??
+    intervals.find((option) => option.value === draft?.updateInterval)?.label ??
       t.updates_check_6_hours(),
   );
-  let intervalBusy = $state(false);
-  let intervalButton = $state<HTMLButtonElement | null>(null);
-
-  const changeInterval = async (interval: UpdateInterval): Promise<void> => {
-    if (intervalBusy || interval === settings.update_interval) return;
-    intervalBusy = true;
-    try {
-      if (await run("set_update_interval", { interval })) void checkForUpdateIfDue();
-    } finally {
-      intervalBusy = false;
-    }
-  };
-
-  const pickInterval = (): void => {
-    if (intervalBusy || !intervalButton) return;
-    openDropdown({
-      anchor: intervalButton,
-      value: settings.update_interval,
-      options: intervals,
-      onSelect: (value) => {
-        const interval = Object.values(UpdateInterval).find((choice) => choice === value);
-        if (interval) void changeInterval(interval);
-      },
-    });
-  };
-
-  $effect(() => {
-    invoke("autostart_status")
-      .then((enabled: boolean) => {
-        autostartAvailable = enabled !== null;
-        autostartEnabled = enabled === true;
-      })
-      .catch(() => {
-        autostartAvailable = false;
-      });
-  });
-
-  const toggleAutostart = async (enabled: boolean): Promise<void> => {
-    const result = await run("set_autostart", { enabled });
-    if (result === null) {
-      autostartEnabled = !enabled;
-    } else {
-      autostartEnabled = enabled;
-      showToast(enabled ? t.settings_autostart_enabled() : t.settings_autostart_disabled(), true);
-    }
-  };
 </script>
 
-<div class="settings-cards">
-  <section class="settings-card">
-    <h3 class="settings-card-title"><Languages size={15} /> {t.language_label()}</h3>
-    <p class="settings-note">{t.language_description()}</p>
-    <button
-      class="select-button"
-      type="button"
-      aria-label={t.language_label()}
-      aria-haspopup="listbox"
-      aria-expanded={dropdown.open && dropdown.anchor === languageButton}
-      bind:this={languageButton}
-      onclick={pickLanguage}
-      disabled={languageBusy}
-      aria-busy={languageBusy}
-    >
-      <span>{languageBusy ? t.common_saving() : languageLabel}</span>
-      <span class="picker-caret">
-        <AsyncIcon icon={ChevronDown} busy={languageBusy} size={14} />
-      </span>
-    </button>
-  </section>
-  <section class="settings-card">
-    <h3 class="settings-card-title"><Search size={15} /> {t.settings_search_title()}</h3>
-    <p class="settings-note">{t.settings_search_description()}</p>
-    <button
-      class="select-button"
-      type="button"
-      aria-label={t.settings_search_label()}
-      aria-haspopup="listbox"
-      aria-expanded={dropdown.open && dropdown.anchor === searchButton}
-      bind:this={searchButton}
-      onclick={pickSearchScope}
-      disabled={searchBusy}
-      aria-busy={searchBusy}
-    >
-      <span>{searchBusy ? t.common_saving() : searchScopeLabel}</span>
-      <span class="picker-caret">
-        <AsyncIcon icon={ChevronDown} busy={searchBusy} size={14} />
-      </span>
-    </button>
-  </section>
-  <section class="settings-card">
-    <h3 class="settings-card-title"><Power size={15} /> {t.settings_startup_title()}</h3>
-    <SettingToggle
-      label={t.settings_autostart_label()}
-      checked={autostartEnabled}
-      disabled={!autostartAvailable}
-      onchange={toggleAutostart}
-    />
-    <SettingToggle
-      label={t.settings_close_quit_label()}
-      checked={settings.close_to_tray === false}
-      onchange={(enabled) => run("set_close_to_tray", { closeToTray: !enabled })}
-    />
-    <p class="settings-note">
-      {settings.close_to_tray === false
-        ? t.settings_close_quit_description()
-        : t.settings_close_tray_description()}
-    </p>
-  </section>
-  <section class="settings-card">
-    <h3 class="settings-card-title"><Eye size={15} /> {t.settings_privacy_title()}</h3>
-    <SettingToggle
-      label={t.settings_privacy_show_login_names()}
-      checked={settings.show_account_names !== false}
-      onchange={(enabled) => run("set_show_account_names", { visible: enabled })}
-    />
-    <p class="settings-note">{t.settings_privacy_description()}</p>
-    <SettingToggle
-      label={t.settings_privacy_blur_codes()}
-      checked={settings.blur_codes === true}
-      onchange={(enabled) => run("set_blur_codes", { enabled })}
-    />
-    <p class="settings-note">{t.settings_privacy_blur_description()}</p>
-    <SettingToggle
-      label={t.settings_privacy_hide_ids()}
-      checked={settings.show_steam_ids !== true}
-      onchange={(enabled) => run("set_steam_ids_visible", { visible: !enabled })}
-    />
-    <p class="settings-note">{t.settings_privacy_ids_description()}</p>
-  </section>
-  <section class="settings-card">
-    <h3 class="settings-card-title"><Download size={15} /> {t.updates_schedule_label()}</h3>
-    <button
-      class="select-button"
-      type="button"
-      aria-label={t.updates_schedule_label()}
-      aria-haspopup="listbox"
-      aria-expanded={dropdown.open && dropdown.anchor === intervalButton}
-      aria-busy={intervalBusy}
-      bind:this={intervalButton}
-      disabled={intervalBusy}
-      onclick={pickInterval}
-    >
-      <span>{intervalBusy ? t.common_saving() : intervalLabel}</span>
-      <span class="picker-caret"
-        ><AsyncIcon icon={ChevronDown} busy={intervalBusy} size={14} /></span
-      >
-    </button>
-    <p class="settings-note">
-      {settings.update_interval === UpdateInterval.NEVER
-        ? t.updates_checks_disabled()
-        : settings.update_interval === UpdateInterval.STARTUP
-          ? t.updates_checks_startup_description()
-          : t.updates_checks_description()}
-    </p>
-  </section>
-</div>
+{#if draft}
+  <div class="settings-cards">
+    <section class="settings-card">
+      <h3 class="settings-card-title"><Languages size={15} /> {t.language_label()}</h3>
+      <p class="settings-note">{t.language_description()}</p>
+      <SelectSetting
+        value={draft.language}
+        options={languageOptions}
+        label={languageLabel}
+        ariaLabel={t.language_label()}
+        onselect={(value) => {
+          const language = Object.values(Language).find((choice) => choice === value);
+          if (language) settingsDraft.set("language", language);
+        }}
+      />
+    </section>
+    <section class="settings-card">
+      <h3 class="settings-card-title"><Search size={15} /> {t.settings_search_title()}</h3>
+      <p class="settings-note">{t.settings_search_description()}</p>
+      <SelectSetting
+        value={draft.searchScope}
+        options={searchScopes}
+        label={searchScopeLabel}
+        ariaLabel={t.settings_search_label()}
+        onselect={(value) => {
+          const scope = searchScopes.find((choice) => choice.value === value)?.value;
+          if (scope) settingsDraft.set("searchScope", scope);
+        }}
+      />
+    </section>
+    <section class="settings-card">
+      <h3 class="settings-card-title"><Power size={15} /> {t.settings_startup_title()}</h3>
+      <SettingToggle
+        label={t.settings_autostart_label()}
+        checked={draft.autostart}
+        disabled={!settingsAutostartAvailable()}
+        onchange={async (enabled) => settingsDraft.set("autostart", enabled)}
+      />
+      <SettingToggle
+        label={t.settings_close_quit_label()}
+        checked={draft.closeToTray === false}
+        onchange={async (enabled) => settingsDraft.set("closeToTray", !enabled)}
+      />
+      <p class="settings-note">
+        {draft.closeToTray === false
+          ? t.settings_close_quit_description()
+          : t.settings_close_tray_description()}
+      </p>
+    </section>
+    <section class="settings-card">
+      <h3 class="settings-card-title"><Eye size={15} /> {t.settings_privacy_title()}</h3>
+      <SettingToggle
+        label={t.settings_privacy_show_login_names()}
+        checked={draft.showAccountNames !== false}
+        onchange={async (enabled) => settingsDraft.set("showAccountNames", enabled)}
+      />
+      <p class="settings-note">{t.settings_privacy_description()}</p>
+      <SettingToggle
+        label={t.settings_privacy_blur_codes()}
+        checked={draft.blurCodes === true}
+        onchange={async (enabled) => settingsDraft.set("blurCodes", enabled)}
+      />
+      <p class="settings-note">{t.settings_privacy_blur_description()}</p>
+      <SettingToggle
+        label={t.settings_privacy_hide_ids()}
+        checked={draft.showSteamIds !== true}
+        onchange={async (enabled) => settingsDraft.set("showSteamIds", !enabled)}
+      />
+      <p class="settings-note">{t.settings_privacy_ids_description()}</p>
+    </section>
+    <section class="settings-card">
+      <h3 class="settings-card-title"><Download size={15} /> {t.updates_schedule_label()}</h3>
+      <SelectSetting
+        value={draft.updateInterval}
+        options={intervals}
+        label={intervalLabel}
+        ariaLabel={t.updates_schedule_label()}
+        onselect={(value) => {
+          const interval = intervals.find((choice) => choice.value === value)?.value;
+          if (interval) settingsDraft.set("updateInterval", interval);
+        }}
+      />
+      <p class="settings-note">
+        {draft.updateInterval === UpdateInterval.NEVER
+          ? t.updates_checks_disabled()
+          : draft.updateInterval === UpdateInterval.STARTUP
+            ? t.updates_checks_startup_description()
+            : t.updates_checks_description()}
+      </p>
+    </section>
+  </div>
+{/if}

@@ -8,5 +8,8 @@
   "tray_locked": "Seif blocat",
   "tray_no_accounts": "Niciun cont",
   "tray_open": "Deschideți",
-  "tray_quit": "Ieșiți"
+  "tray_quit": "Ieșiți",
+  "exit_blocked_link_in_flight": "Steam Guard Desktop nu se poate închide cât timp o asociere Steam este în curs. Finalizați-o sau anulați-o mai întâi.",
+  "database_open_failed_body": "Baza de date a aplicației nu a putut fi deschisă (%{code}).\n\nLocație: %{path}\n\nFișierul a fost lăsat neatins. Rezolvați problema (spațiu pe disc, permisiuni sau rulați versiunea corespunzătoare a aplicației) și reporniți.",
+  "database_recovered_notice": "La pornire a fost găsit un fișier de bază de date corupt, mutat ca „%{backup}”. A fost creată o bază de date nouă, goală; adăugați-vă conturile din nou sau încercați să recuperați manual fișierul vechi."
 }

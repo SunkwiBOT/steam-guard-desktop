@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 use super::{SearchScope, UpdateInterval, VaultLockInterval};
 use crate::locale::Language;
@@ -9,7 +10,8 @@ fn default_true() -> bool {
     true
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export_to = "Folder.ts")]
 pub struct Folder {
     pub id: String,
     pub name: String,
@@ -19,7 +21,6 @@ pub struct Folder {
     pub icon: Option<String>,
 }
 
-/// Folder icons offered by the interface. Unknown values are never stored.
 pub const FOLDER_ICONS: [&str; 20] = [
     "folder",
     "folder-open",
@@ -64,6 +65,8 @@ pub struct Settings {
     #[serde(default)]
     pub last_update_check_at: Option<u64>,
     #[serde(default)]
+    pub vault_offer_dismissed: bool,
+    #[serde(default)]
     pub folders: Vec<Folder>,
     #[serde(default)]
     pub account_folders: BTreeMap<String, String>,
@@ -83,6 +86,7 @@ impl Default for Settings {
             search_scope: SearchScope::Both,
             vault_lock_interval: VaultLockInterval::Startup,
             last_update_check_at: None,
+            vault_offer_dismissed: false,
             folders: Vec::new(),
             account_folders: BTreeMap::new(),
             account_colors: BTreeMap::new(),
@@ -151,8 +155,6 @@ impl Settings {
         self.folders.len() != before
     }
 
-    /// Moves an account into a folder, or back to the root when `folder` is
-    /// `None` or points at a folder that does not exist.
     pub fn set_account_folder(&mut self, steam_id: &str, folder: Option<&str>) {
         let valid = folder
             .map(|id| self.folders.iter().any(|entry| entry.id == id))
@@ -180,7 +182,6 @@ impl Settings {
         }
     }
 
-    /// Drops everything kept about an account once it is no longer listed.
     pub fn forget_account(&mut self, steam_id: &str) {
         self.account_folders.remove(steam_id);
         self.account_colors.remove(steam_id);
@@ -219,7 +220,7 @@ pub(super) fn slug(name: &str) -> String {
     }
 }
 
-/// ! Only plain hex colours are stored, so a value can never inject CSS.
+// ! Only plain hex colours are stored, so a value can never inject CSS.
 pub(super) fn is_safe_color(value: &str) -> bool {
     let bytes = value.as_bytes();
     matches!(bytes.len(), 4 | 7 | 9)

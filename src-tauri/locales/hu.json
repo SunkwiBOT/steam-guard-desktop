@@ -8,5 +8,8 @@
   "tray_locked": "Széf zárolva",
   "tray_no_accounts": "Nincsenek fiókok",
   "tray_open": "Megnyitás",
-  "tray_quit": "Kilépés"
+  "tray_quit": "Kilépés",
+  "exit_blocked_link_in_flight": "A Steam Guard Desktop nem zárható be, amíg egy Steam-összekapcsolás folyamatban van. Fejezze be vagy szakítsa meg előbb.",
+  "database_open_failed_body": "Az alkalmazás adatbázisát nem sikerült megnyitni (%{code}).\n\nHely: %{path}\n\nA fájl érintetlen maradt. Hárítsa el a problémát (lemezterület, jogosultságok, vagy indítsa el a megfelelő alkalmazásverziót), majd indítsa újra.",
+  "database_recovered_notice": "Indításkor sérült adatbázisfájl került elő, amelyet a program „%{backup}” néven félretett. Új, üres adatbázis jött létre; adja hozzá fiókjait újra, vagy próbálja meg manuálisan helyreállítani a régi fájlt."
 }

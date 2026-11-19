@@ -14,10 +14,3 @@ export enum BackupField {
   REPEAT = "repeat",
   GENERAL = "general",
 }
-
-export enum PickFileKind {
-  MAFILE = "mafile",
-  BACKUP = "backup",
-}
-
-export const BACKUP_EXTENSION = "steamguard";

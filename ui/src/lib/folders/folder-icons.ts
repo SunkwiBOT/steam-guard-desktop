@@ -21,7 +21,6 @@ import {
   Zap,
 } from "@lucide/svelte";
 import { t } from "../i18n/i18n.svelte";
-import { folderIconId } from "./folder-style";
 
 export type FolderIconType = {
   id: string;
@@ -53,4 +52,4 @@ export const FOLDER_ICONS: FolderIconType[] = [
 ];
 
 export const folderIcon = (id: string | null | undefined): typeof Folder =>
-  FOLDER_ICONS.find((entry) => entry.id === folderIconId(id))?.icon ?? Folder;
+  FOLDER_ICONS.find((entry) => entry.id === id)?.icon ?? Folder;

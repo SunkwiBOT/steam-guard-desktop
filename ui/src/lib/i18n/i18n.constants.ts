@@ -1,5 +1,5 @@
-//! Tags mirror `Language` in src-tauri/src/locale.rs, the Paraglide locales
-//! and the rust-i18n files: the lists must stay identical.
+// ! Tags mirror `Language` in src-tauri/src/locale.rs, the Paraglide locales
+// and the rust-i18n files: the lists must stay identical.
 export enum Language {
   AUTO = "auto",
   EN = "en",
@@ -39,7 +39,6 @@ export const RESOLVED_LANGUAGES: readonly ResolvedLanguageType[] = Object.values
   (value): value is ResolvedLanguageType => value !== Language.AUTO,
 );
 
-/** Each language named in itself, so the picker reads the same in every language. */
 export const LANGUAGE_LABELS: Record<ResolvedLanguageType, string> = {
   [Language.EN]: "English",
   [Language.FR]: "Français",
@@ -72,7 +71,7 @@ export const LANGUAGE_LABELS: Record<ResolvedLanguageType, string> = {
   [Language.ID]: "Bahasa Indonesia",
 };
 
-/** Same rules as `resolve_system_locale` on the Rust side; English when nothing matches. */
+// ! Same rules as `resolve_system_locale` on the Rust side; English when nothing matches.
 export const resolveSystemLocale = (locales: readonly string[]): ResolvedLanguageType => {
   for (const raw of locales) {
     const parts = raw

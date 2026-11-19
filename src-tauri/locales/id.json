@@ -8,5 +8,8 @@
   "tray_locked": "Brankas terkunci",
   "tray_no_accounts": "Tidak ada akun",
   "tray_open": "Buka",
-  "tray_quit": "Keluar"
+  "tray_quit": "Keluar",
+  "exit_blocked_link_in_flight": "Steam Guard Desktop tidak dapat ditutup saat tautan Steam sedang berlangsung. Selesaikan atau batalkan dulu.",
+  "database_open_failed_body": "Basis data aplikasi tidak dapat dibuka (%{code}).\n\nLokasi: %{path}\n\nBerkas dibiarkan tidak berubah. Atasi masalahnya (ruang disk, izin, atau jalankan versi aplikasi yang sesuai) lalu mulai ulang.",
+  "database_recovered_notice": "Saat memulai, ditemukan berkas basis data yang rusak dan dipindahkan sebagai \"%{backup}\". Basis data baru yang kosong telah dibuat; tambahkan kembali akun Anda, atau coba pulihkan berkas lama secara manual."
 }

@@ -19,18 +19,30 @@ impl SteamError {
     pub fn config(message: ErrorCode) -> Self {
         SteamError::Config(message)
     }
+
+    pub fn code(&self) -> ErrorCode {
+        match self {
+            SteamError::Io { source, .. } if source.kind() == io::ErrorKind::PermissionDenied => {
+                ErrorCode::FilePermission
+            }
+            SteamError::Io { source, .. } => {
+                ErrorCode::from_code(&source.to_string()).unwrap_or(ErrorCode::IoError)
+            }
+            SteamError::Config(code) => *code,
+        }
+    }
+
+    pub fn context(&self) -> Option<&str> {
+        match self {
+            SteamError::Io { context, .. } => Some(context),
+            SteamError::Config(_) => None,
+        }
+    }
 }
 
 impl fmt::Display for SteamError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let code = match self {
-            SteamError::Io { source, .. } if source.kind() == io::ErrorKind::PermissionDenied => {
-                ErrorCode::FilePermission
-            }
-            SteamError::Io { .. } => ErrorCode::IoError,
-            SteamError::Config(code) => *code,
-        };
-        formatter.write_str(code.as_str())
+        formatter.write_str(self.code().as_str())
     }
 }
 

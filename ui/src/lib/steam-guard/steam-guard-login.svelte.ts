@@ -1,4 +1,4 @@
-import { ErrorApiMessage } from "../errors/errors.constants";
+import { UiErrorCode } from "../errors/errors.constants";
 import { resolveErrorCode } from "../errors/errors.svelte";
 import {
   GuardAction,
@@ -8,18 +8,16 @@ import {
   GuardKind,
 } from "./steam-guard.constants";
 import type { GuardSessionType } from "./steam-guard-session.svelte";
-import type { LoginBeginType, LoginResultType } from "../types";
+import type { LoginBegin } from "../bindings/LoginBegin";
+import type { LoginResult } from "../bindings/LoginResult";
 import { invoke } from "../api/tauri";
 
 export type LoginDepsType = {
   session: GuardSessionType;
-  /** Sign-in name already known for the account, "" when the user must type it. */
   knownAccountName: () => string;
-  /** Steam ID the login must belong to, null for a brand-new account. */
   expectedSteamId: () => string | null;
-  /** Account whose saved authenticator can supply the device code, if any. */
   localCodeSteamId: () => string | null;
-  onSignedIn: (result: LoginResultType, purpose: LoginPurpose) => Promise<void>;
+  onSignedIn: (result: LoginResult, purpose: LoginPurpose) => Promise<void>;
   resetAll: () => void;
 };
 
@@ -28,7 +26,7 @@ export const createLoginController = (deps: LoginDepsType) => {
 
   let accountName = $state("");
   let password = $state("");
-  let loginBegin = $state<LoginBeginType | null>(null);
+  let loginBegin = $state<LoginBegin | null>(null);
   let selectedGuard = $state<GuardKind | null>(null);
   let loginCode = $state("");
   let waiting = $state(false);
@@ -66,21 +64,22 @@ export const createLoginController = (deps: LoginDepsType) => {
     if (cancelled) deps.resetAll();
   };
 
-  const chooseMethod = (methods: LoginBeginType["methods"]): void => {
+  const chooseMethod = (methods: LoginBegin["methods"]): void => {
     const codeMethod = methods.find(
       (method) => method.kind === GuardKind.DEVICE_CODE || method.kind === GuardKind.EMAIL_CODE,
     );
-    selectedGuard = codeMethod?.kind ?? methods[0]?.kind ?? null;
+    // ! Wire value: a plain string union, always one of `GuardKind`'s members.
+    selectedGuard = (codeMethod?.kind ?? methods.at(0)?.kind ?? null) as GuardKind | null;
   };
 
   const startPassword = async (): Promise<void> => {
     const name = (deps.knownAccountName() || accountName).trim();
     if (!name) {
-      session.fail(ErrorApiMessage.ACCOUNT_NAME_REQUIRED, SteamGuardField.ACCOUNT_NAME);
+      session.fail(UiErrorCode.ACCOUNT_NAME_REQUIRED, SteamGuardField.ACCOUNT_NAME);
       return;
     }
     if (!password) {
-      session.fail(ErrorApiMessage.STEAM_PASSWORD_REQUIRED, SteamGuardField.PASSWORD);
+      session.fail(UiErrorCode.STEAM_PASSWORD_REQUIRED, SteamGuardField.PASSWORD);
       return;
     }
     const begin = await session.guard(
@@ -128,15 +127,15 @@ export const createLoginController = (deps: LoginDepsType) => {
       }
       const expected = deps.expectedSteamId();
       if (expected && signedIn.steam_id !== expected) {
-        session.fail(ErrorApiMessage.ACCOUNT_MISMATCH, SteamGuardField.LOGIN);
+        session.fail(UiErrorCode.ACCOUNT_MISMATCH, SteamGuardField.LOGIN);
         loginBegin = null;
         return;
       }
       loginBegin = null;
       await deps.onSignedIn(signedIn, loginPurpose);
-    } catch (cause) {
+    } catch (e: unknown) {
       if (current === session.generation()) {
-        session.fail(resolveErrorCode(cause), SteamGuardField.LOGIN);
+        session.fail(resolveErrorCode(e), SteamGuardField.LOGIN);
       }
     } finally {
       if (current === session.generation()) waiting = false;
@@ -169,7 +168,7 @@ export const createLoginController = (deps: LoginDepsType) => {
         value = current.code;
       }
       if (!value) {
-        session.fail(ErrorApiMessage.GUARD_CODE_REQUIRED, SteamGuardField.LOGIN_CODE);
+        session.fail(UiErrorCode.GUARD_CODE_REQUIRED, SteamGuardField.LOGIN_CODE);
         return;
       }
       await finishLogin(selectedGuard, value);

@@ -3,9 +3,21 @@ use tauri::State;
 
 use super::build_snapshot;
 use super::dto::{AppInfoDto, SnapshotDto};
+use crate::settings::Settings;
 use crate::state::AppState;
 
-const REPOSITORY_URL: &str = "https://github.com/SunkwiBOT/steam-guard-desktop";
+fn set_preference(
+    name: &'static str,
+    state: &State<'_, AppState>,
+    change: impl FnOnce(&mut Settings),
+    after: impl FnOnce(),
+) -> Result<SnapshotDto, String> {
+    crate::logging::run(name, || {
+        state.update_settings(change)?;
+        after();
+        Ok(build_snapshot(state))
+    })
+}
 
 #[tauri::command(async)]
 pub fn set_language(
@@ -13,11 +25,12 @@ pub fn set_language(
     state: State<'_, AppState>,
     language: crate::locale::Language,
 ) -> Result<SnapshotDto, String> {
-    crate::logging::run("set_language", || {
-        state.update_settings(|settings| settings.language = language)?;
-        crate::tray::refresh_menu(&app);
-        Ok(build_snapshot(&state))
-    })
+    set_preference(
+        "set_language",
+        &state,
+        |settings| settings.language = language,
+        || crate::tray::refresh_menu(&app),
+    )
 }
 
 #[tauri::command(async)]
@@ -25,10 +38,12 @@ pub fn set_close_to_tray(
     state: State<'_, AppState>,
     close_to_tray: bool,
 ) -> Result<SnapshotDto, String> {
-    crate::logging::run("set_close_to_tray", || {
-        state.update_settings(|settings| settings.close_to_tray = close_to_tray)?;
-        Ok(build_snapshot(&state))
-    })
+    set_preference(
+        "set_close_to_tray",
+        &state,
+        |settings| settings.close_to_tray = close_to_tray,
+        || {},
+    )
 }
 
 #[tauri::command(async)]
@@ -36,10 +51,12 @@ pub fn set_update_interval(
     state: State<'_, AppState>,
     interval: crate::settings::UpdateInterval,
 ) -> Result<SnapshotDto, String> {
-    crate::logging::run("set_update_interval", || {
-        state.update_settings(|settings| settings.update_interval = interval)?;
-        Ok(build_snapshot(&state))
-    })
+    set_preference(
+        "set_update_interval",
+        &state,
+        |settings| settings.update_interval = interval,
+        || {},
+    )
 }
 
 #[tauri::command(async)]
@@ -47,10 +64,12 @@ pub fn set_vault_lock_interval(
     state: State<'_, AppState>,
     interval: crate::settings::VaultLockInterval,
 ) -> Result<SnapshotDto, String> {
-    crate::logging::run("set_vault_lock_interval", || {
-        state.update_settings(|settings| settings.vault_lock_interval = interval)?;
-        Ok(build_snapshot(&state))
-    })
+    set_preference(
+        "set_vault_lock_interval",
+        &state,
+        |settings| settings.vault_lock_interval = interval,
+        || {},
+    )
 }
 
 #[tauri::command(async)]
@@ -59,11 +78,12 @@ pub fn set_show_account_names(
     state: State<'_, AppState>,
     visible: bool,
 ) -> Result<SnapshotDto, String> {
-    crate::logging::run("set_show_account_names", || {
-        state.update_settings(|settings| settings.show_account_names = visible)?;
-        crate::tray::refresh_menu(&app);
-        Ok(build_snapshot(&state))
-    })
+    set_preference(
+        "set_show_account_names",
+        &state,
+        |settings| settings.show_account_names = visible,
+        || crate::tray::refresh_menu(&app),
+    )
 }
 
 #[tauri::command(async)]
@@ -71,18 +91,32 @@ pub fn set_steam_ids_visible(
     state: State<'_, AppState>,
     visible: bool,
 ) -> Result<SnapshotDto, String> {
-    crate::logging::run("set_steam_ids_visible", || {
-        state.update_settings(|settings| settings.show_steam_ids = visible)?;
-        Ok(build_snapshot(&state))
-    })
+    set_preference(
+        "set_steam_ids_visible",
+        &state,
+        |settings| settings.show_steam_ids = visible,
+        || {},
+    )
 }
 
 #[tauri::command(async)]
 pub fn set_blur_codes(state: State<'_, AppState>, enabled: bool) -> Result<SnapshotDto, String> {
-    crate::logging::run("set_blur_codes", || {
-        state.update_settings(|settings| settings.blur_codes = enabled)?;
-        Ok(build_snapshot(&state))
-    })
+    set_preference(
+        "set_blur_codes",
+        &state,
+        |settings| settings.blur_codes = enabled,
+        || {},
+    )
+}
+
+#[tauri::command(async)]
+pub fn set_vault_offer_dismissed(state: State<'_, AppState>) -> Result<SnapshotDto, String> {
+    set_preference(
+        "set_vault_offer_dismissed",
+        &state,
+        |settings| settings.vault_offer_dismissed = true,
+        || {},
+    )
 }
 
 #[tauri::command(async)]
@@ -90,10 +124,12 @@ pub fn set_search_scope(
     state: State<'_, AppState>,
     scope: crate::settings::SearchScope,
 ) -> Result<SnapshotDto, String> {
-    crate::logging::run("set_search_scope", || {
-        state.update_settings(|settings| settings.search_scope = scope)?;
-        Ok(build_snapshot(&state))
-    })
+    set_preference(
+        "set_search_scope",
+        &state,
+        |settings| settings.search_scope = scope,
+        || {},
+    )
 }
 
 #[tauri::command(async)]
@@ -180,16 +216,16 @@ pub fn set_folder_icon(
 }
 
 #[tauri::command(async)]
-pub fn set_window_active(state: State<'_, AppState>, active: bool) {
-    state.set_window_active(active);
-}
-
-#[tauri::command(async)]
 pub fn app_info(app: tauri::AppHandle) -> AppInfoDto {
     AppInfoDto {
         name: app.package_info().name.clone(),
         version: app.package_info().version.to_string(),
-        repository: REPOSITORY_URL.to_string(),
+        repository: env!("CARGO_PKG_REPOSITORY").to_string(),
+        backup_extension: crate::auth_commands::backup::BACKUP_EXTENSION.to_string(),
+        folder_icons: crate::settings::FOLDER_ICONS
+            .iter()
+            .map(|icon| icon.to_string())
+            .collect(),
     }
 }
 

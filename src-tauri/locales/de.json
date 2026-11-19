@@ -8,5 +8,8 @@
   "tray_locked": "Tresor gesperrt",
   "tray_no_accounts": "Keine Konten",
   "tray_open": "Öffnen",
-  "tray_quit": "Beenden"
+  "tray_quit": "Beenden",
+  "exit_blocked_link_in_flight": "Steam Guard Desktop kann sich nicht schließen, während eine Steam-Verknüpfung läuft. Schließen Sie sie zuerst ab oder brechen Sie sie ab.",
+  "database_open_failed_body": "Die Anwendungsdatenbank konnte nicht geöffnet werden (%{code}).\n\nSpeicherort: %{path}\n\nDie Datei wurde unverändert gelassen. Beheben Sie das Problem (Speicherplatz, Berechtigungen oder die passende App-Version ausführen) und starten Sie neu.",
+  "database_recovered_notice": "Beim Start wurde eine beschädigte Datenbankdatei gefunden und als „%{backup}“ beiseitegelegt. Eine neue, leere Datenbank wurde erstellt; fügen Sie Ihre Konten erneut hinzu oder versuchen Sie, die alte Datei manuell wiederherzustellen."
 }

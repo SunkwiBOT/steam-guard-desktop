@@ -233,18 +233,6 @@
   min-width: 0;
 }
 
-.dialog.vault-password-dialog {
-  height: fit-content;
-  position: fixed;
-  inset: 0;
-  margin: auto;
-  color: var(--text);
-}
-
-.vault-password-dialog:not([open]) {
-  display: none;
-}
-
 .vault-password-form {
   display: flex;
   flex-direction: column;
@@ -331,7 +319,7 @@
 
 .add-option:disabled {
   opacity: 0.45;
-  cursor: default;
+  cursor: not-allowed;
 }
 
 .add-option-icon {

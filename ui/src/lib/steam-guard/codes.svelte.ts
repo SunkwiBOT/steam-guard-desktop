@@ -1,32 +1,30 @@
 import { untrack } from "svelte";
 import { resolveErrorCode } from "../errors/errors.svelte";
-import type { ErrorApiMessage } from "../errors/errors.constants";
+import type { UiErrorCode } from "../errors/errors.constants";
 import { app, vault } from "../state/state.svelte";
 import { invoke } from "../api/tauri";
-import type { CodeInfoType } from "../types";
+import type { CodeInfo } from "../bindings/CodeInfo";
 
 export type LiveCodeType = {
   code: string;
   period: number;
   remaining: number;
-  error: ErrorApiMessage | "";
+  error: UiErrorCode | "";
 };
 
 type CachedCodeType = {
-  info: CodeInfoType;
+  info: CodeInfo;
   expiresAt: number;
 };
 
 const RETRY_DELAY_MS = 5000;
 
-const cache = $state<Record<string, CachedCodeType>>({});
-const errors = $state<Record<string, ErrorApiMessage>>({});
+const cache = $state<Partial<Record<string, CachedCodeType>>>({});
+const errors = $state<Partial<Record<string, UiErrorCode>>>({});
 const clock = $state({ now: Date.now() });
-const watchers = $state<Record<string, number>>({});
+const watchers = $state<Partial<Record<string, number>>>({});
 const inFlight = new Set<string>();
 const retryAt = new Map<string, number>();
-//! Bumped whenever cached codes become stale (lock, accounts changed) so a
-//! fetch started before cannot repopulate the cache afterwards.
 let generation = 0;
 
 const remainingOf = (entry: CachedCodeType, now: number): number =>
@@ -53,9 +51,9 @@ const fetchCode = async (steamId: string): Promise<void> => {
     if (current !== generation) return;
     cache[steamId] = { info, expiresAt: Date.now() + info.seconds_remaining * 1000 };
     delete errors[steamId];
-  } catch (cause) {
+  } catch (e: unknown) {
     if (current !== generation) return;
-    errors[steamId] = resolveErrorCode(cause);
+    errors[steamId] = resolveErrorCode(e);
     retryAt.set(steamId, Date.now() + RETRY_DELAY_MS);
   } finally {
     inFlight.delete(steamId);
@@ -73,8 +71,6 @@ const tick = (): void => {
   }
 };
 
-/** Registers interest in a live code; the returned function releases it.
- *  ! Untracked: a caller's effect must not depend on the cache it fills. */
 export const watchCode = (steamId: string): (() => void) => {
   untrack(() => {
     watchers[steamId] = (watchers[steamId] ?? 0) + 1;
@@ -103,8 +99,6 @@ export const liveCode = (steamId: string): LiveCodeType | null => {
   };
 };
 
-/** One shared 1 s ticker for every visible code; idle while the vault is
- *  locked, the window inactive or nothing is watching. */
 export const startCodeTicker = (): (() => void) =>
   $effect.root(() => {
     $effect(() => {
