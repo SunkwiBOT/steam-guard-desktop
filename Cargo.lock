@@ -1932,7 +1932,7 @@ dependencies = [
 
 [[package]]
 name = "guard-core"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "aes",
  "aes-gcm",
@@ -5134,7 +5134,7 @@ checksum = "ff7589a1859b09232522bb9edf076ca7fcf14ded96685d3fa629db73023ffbb7"
 
 [[package]]
 name = "steam-guard-desktop"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "base64 0.22.1",
  "dirs 6.0.0",
