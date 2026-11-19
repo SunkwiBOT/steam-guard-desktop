@@ -59,8 +59,11 @@ pub fn write_atomic(path: &Path, contents: &str, mode: WriteMode) -> io::Result<
     }
 
     let temporary = unique_temporary(path);
+    #[cfg(unix)]
     let result =
         write_synced(&temporary, path, contents, mode).and_then(|()| fs::rename(&temporary, path));
+    #[cfg(not(unix))]
+    let result = write_synced(&temporary, contents).and_then(|()| fs::rename(&temporary, path));
     if result.is_err() {
         let _ = fs::remove_file(&temporary);
     }
@@ -69,9 +72,9 @@ pub fn write_atomic(path: &Path, contents: &str, mode: WriteMode) -> io::Result<
 
 fn write_synced(
     temporary: &Path,
-    original: &Path,
+    #[cfg(unix)] original: &Path,
     contents: &str,
-    mode: WriteMode,
+    #[cfg(unix)] mode: WriteMode,
 ) -> io::Result<()> {
     let mut options = OpenOptions::new();
     options.write(true).create_new(true);
